@@ -36,3 +36,138 @@
     transform: rotate(360deg);
   }
 }
+
+.board {
+  width: 480px;
+  height: 480px;
+  border: 1px solid;
+}
+
+.board .row {
+  width: 480px;
+  height: 32px;
+  float: left;
+}
+
+.board .cell {
+  width: 32px;
+  height: 32px;
+  float: left;
+  position: relative;
+} 
+
+.board .tile {
+  background-image: url("./images/Ultima_5_-_Tiles-pc-doubled.png");  
+}
+
+
+/*
+@keyframes changeBGhero {
+  from {
+    background-position: -384px -320px;
+  }
+
+  to {
+    background-position: -416px -320px;
+  }
+}
+.board .tile--1 {
+  animation-name: changeBGhero;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+*/
+
+.board .tile--1 { /* hero */
+  background-position: -384px -320px;
+}  
+
+
+.board .tile-0 {
+  background-color: #000;
+  background-image: none;  
+}
+.board .tile-1 { /* deep water */
+  background-color: #12809b;
+  background-position: -32px 0;
+}
+.board .tile-2 { /* medium water */
+  background-color: #8cbccb;
+  background-position: -64px 0;
+}
+
+.board .tile-3 { /* shallow water */
+  background-color: #c5eaf5;
+  background-position: -96px 0;
+}
+.board .tile-4 { /* marsh */
+  background-color: rgb(94, 201, 174);
+  background-position: -128px 0;
+}
+.board .tile-5 { /* grass */
+  background-color: #a4d093;
+  background-position: -160px 0;
+}
+
+.board .tile-6 { /* foothill */ 
+  background-position: -352px 0;
+}
+.board .tile-7 { /* low mountain */  
+  background-position: -384px 0;
+}
+.board .tile-8 { /* high mountain */  
+  background-position: -416px 0;
+}
+
+.board .tile-9 { /* light forest */  
+  background-position: -256px 0;
+}
+.board .tile-10 { /* heavy forest */  
+  background-position: -320px 0;
+}
+
+.board .tile-11 { /* beach */   
+  background-image: url("./images/Beach.png");
+}
+.board .tile-12 { /* desert cactus */  
+  background-position: -480px -32px;
+}
+
+.board .tile-13 { /* desert */  
+  background-position: -224px 0;
+}
+
+.board .tile-14 { /* marsh */  
+  background-position: -128px 0;
+}
+
+
+.avatar-tile {
+  width: 32px;
+  height: 32px;
+  background-image: url("./images/Ultima_5_-_Tiles-pc-doubled.png");
+  background-position: -384px -320px;  
+}
+.avatar-tile.avatar-tile-2 { 
+  background-position: -256px -320px;  
+}
+.avatar-tile.avatar-tile-3 { 
+  background-position: -128px -320px;  
+}
+.avatar-tile.avatar-tile-4 { 
+  background-position: 0 -320px;  
+}
+.avatar-tile.avatar-tile-5 { 
+  background-position: -512px -320px;  
+}
+.avatar-tile.avatar-tile-6 { 
+  background-position: -672px -320px;  
+}
+
+.animal-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+}
