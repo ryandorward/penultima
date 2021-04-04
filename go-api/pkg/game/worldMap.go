@@ -14,8 +14,7 @@ import (
 
 )
 
-var Width int = 16
-var Height int = 16
+var WorldWidth, WorldHeight int
 
 type WorldMap struct {
 	Grid [][] int8
@@ -54,6 +53,10 @@ func randomMap() *WorldMap {
 
 }	
 */
+
+func (w WorldMap) getTerrain(location Coord) int8 {
+	return w.Grid[location.X][location.Y]
+}
 
 // @todo: using pix method would be 4-10x faster, see: https://stackoverflow.com/questions/33186783/get-a-pixel-array-from-from-golang-image-image
 func image_to_array(img image.Image) [][][3]uint32 {
@@ -106,7 +109,6 @@ func get_tile_opacity (tile int) float32 {
 func png_pixel_to_terrain_code( pixel[3]uint32) int8 {
 
 	switch pixel {
-
 		case [3]uint32{4626, 32896, 39835}: // deep water
 			return 1;	
 		case [3]uint32{35980, 48316, 52171}: // medium water
@@ -132,8 +134,7 @@ func png_pixel_to_terrain_code( pixel[3]uint32) int8 {
 		case [3]uint32{62708, 55769, 23130}: // desert - sand	
 			return 13;
 		case [3]uint32{26214, 52428, 39321} : // marsh/wetland
-			return 14;
-								
+			return 14;								
 		default: 
 			return 0; 
 	}
@@ -146,7 +147,6 @@ func NewWorldMap() *WorldMap {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Current path: " , dir)
 
 	img_path:= dir + "/data/maps/pax-britannia-512-terrain-layers.png" 
 
@@ -166,10 +166,9 @@ func NewWorldMap() *WorldMap {
 		return nil
 	}	
 	bounds := m.Bounds()
-	Width = bounds.Max.X
-	Height = bounds.Max.Y
+	WorldWidth = bounds.Max.X
+	WorldHeight = bounds.Max.Y
 
-	fmt.Println("Bounds: ", bounds.Min.Y, bounds.Max.Y, bounds.Min.X, bounds.Max.X)
 	bb := time.Now()
   fmt.Println("Read file time: ", float64(bb.Nanosecond() - aa.Nanosecond()) / 1e9)
 
@@ -199,8 +198,6 @@ func NewWorldMap() *WorldMap {
 		 
 	myWorldMap := WorldMap{}
 	myWorldMap.Grid = terrainArr
-
-	//myWorldMap := randomMap()		
 	
 	return &myWorldMap
 

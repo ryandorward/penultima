@@ -13,9 +13,8 @@ type Pool struct {
 	Unregister chan *Client
 	Clients    map[*Client]bool
 	Broadcast  chan Message
-	MovesChan chan Move
-	// FOVCalc *fov.View
 	WorldMap *game.WorldMap
+	// FOVCalc *fov.View	
 }
 
 func NewPool() *Pool {
@@ -23,8 +22,7 @@ func NewPool() *Pool {
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
-		Broadcast:  make(chan Message),
-		MovesChan:  make(chan Move),		
+		Broadcast:  make(chan Message),		
 		WorldMap: game.NewWorldMap(),
 		// FOVCalc: fov.New(),
 	}
@@ -64,14 +62,7 @@ func (pool *Pool) Start() {
 				}
 				break
 			
-			case move := <-pool.MovesChan:
-				fmt.Println("Sending moves to all clients in Pool")
-				for client, _ := range pool.Clients {
-					if err := client.Conn.WriteJSON(move); err != nil {
-						fmt.Println(err)
-						return
-					}
-				}
+		
 		}
 	}
 }

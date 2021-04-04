@@ -2,12 +2,8 @@ package main
 
 import (
     "fmt"
-    "net/http"
-    //"net/url"
-	"app/pkg/websocket"      
-    //"github.com/google/uuid"      
-    //"encoding/json"
-    //"strconv"  
+    "net/http"    
+	"app/pkg/websocket"          
 )
 
 
