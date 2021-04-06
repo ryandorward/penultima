@@ -1,7 +1,7 @@
 package game
 
 import (
-	"sync"
+	// "sync"
 	"time"
 	"fmt"
 	"github.com/google/uuid"
@@ -10,13 +10,11 @@ import (
 
 type Player struct {
 	ID   string	
-	others []*Player
 	Location Coord
 	TerrainView [][]int8
 	AnimateView [][]int8	// view of animating layer, sits "on top" of terrain
-	mutex sync.Mutex
 	WorldMap *WorldMap
-	PlayerCook playerCookie
+	PlayerCook PlayerCookie
 }
 
 const ViewWidth int = 15
@@ -25,16 +23,36 @@ const ViewHeight int = 15
 var halfViewWidth int = ViewWidth/2 // integer division gives floor, which is what we want
 var halfViewHeight int = ViewHeight/2
 
-type playerCookie struct {
+type PlayerCookie struct {
 	Avatar int8    `json:"avatar"`
 	Name string `json:"name"`		
 }
 
-func (p *Player) CanSee(other *Player) bool {
-	return true
+func (p *Player) GetLocation() (Coord){	
+	return p.Location;
+}	
+func (p *Player) GetID() (string){	
+	return p.ID;
+}	
+
+func (p *Player) CanSee(other *Player) (bool, int, int) {
+	xStart := WrapMod((p.Location.X - halfViewWidth),WorldWidth);
+	yStart := WrapMod((p.Location.Y - halfViewHeight),WorldHeight);
+	loc := other.GetLocation()
+	ox := loc.X
+	oy := loc.Y 
+	xrel := WrapMod(ox - xStart, WorldWidth) // some head breaking math to figure out if other player is within the view
+	yrel := WrapMod(oy - yStart, WorldHeight)
+	// if other is within view and not on a shadowed tile
+	if ( (xrel < ViewWidth) && (yrel < ViewHeight) && p.TerrainView[xrel][yrel] != 0) {		
+		fmt.Println("Can see")		
+		return true, xrel, yrel		
+	}			
+	fmt.Println("Can't see")		
+	return false, 0, 0
 }
 
-func NewPlayer(cookieStuff playerCookie) *Player {
+func NewPlayer(cookieStuff PlayerCookie, worldMap *WorldMap) *Player {
 
 	// Initialize client TerrainView slices
 	view := make([][]int8, ViewHeight)       // initialize a slice of viewHeight slices
@@ -56,7 +74,8 @@ func NewPlayer(cookieStuff playerCookie) *Player {
 		},
 		TerrainView: view, 
 		AnimateView: animal,
-		PlayerCook: cookieStuff,    
+		PlayerCook: cookieStuff,   
+		WorldMap: worldMap, 		
 	}
 
 	player.SetWorldView() // initialize player's view
@@ -64,7 +83,7 @@ func NewPlayer(cookieStuff playerCookie) *Player {
 }
 
 
-func (p *Player) SetWorldView() ([]*Player){	
+func (p *Player) SetWorldView() {	
 
 	aa := time.Now()
 	
@@ -108,32 +127,9 @@ func (p *Player) SetWorldView() ([]*Player){
 		} 
 	}
 
-	updatableOthers := []*Player{}
- 
-	// Add the other players onto the worldview, keep track of which ones are visible, they will need to be updated too
-	for _, other := range p.others {	
-		if (other.ID == p.ID) { continue }
-		px := other.Location.X
-		py := other.Location.Y   		
-		xrel := WrapMod(px - xStart, WorldWidth) // some head breaking math to figure out if other player is within the view
-		yrel := WrapMod(py - yStart, WorldHeight)
-		
-		// if other is within view and not on a shadowed tile
-		if ( (xrel < ViewWidth) && (yrel < ViewHeight) && p.TerrainView[xrel][yrel] != 0) {	
-			// c.TerrainView[xrel][yrel] = -1	
-			p.AnimateView[xrel][yrel] = other.PlayerCook.Avatar
-			fmt.Println("Adding to animated layer" , other.PlayerCook.Avatar)
-			
-			updatableOthers = append(updatableOthers,other)
-			
-		}				 
-	}	
 
 	bb := time.Now()
-	fmt.Println("Calculate view time: ", float64(bb.Nanosecond() - aa.Nanosecond()) / 1e9)
-
-	return updatableOthers;
-	  
+	fmt.Println("Calculate view time: ", float64(bb.Nanosecond() - aa.Nanosecond()) / 1e9)	  
 }	
 
 

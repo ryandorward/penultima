@@ -6,7 +6,6 @@ import (
 	"app/pkg/websocket"          
 )
 
-
 func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")

@@ -12,6 +12,7 @@ type TerrainMap interface {
 type LocatableEntity interface {
 	GetLocation() Coord
 	GetID() string
+	GetAvatar() int8
 }
 
 type Coord struct {

@@ -1,47 +1,22 @@
 package websocket
 
 import (
-    "fmt"
-    "log"   	
-		"github.com/gorilla/websocket"
-		"app/pkg/game" 
-		"app/pkg/fov" 
-		"time"
-		"sync"
-		"net/http"
-		"net/url"
-		"encoding/json"
-		"strconv" 
-		"github.com/google/uuid" 
-	//	"errors"  
-)
-
-const ViewWidth int = 15
-const ViewHeight int = 15
-
-var halfViewWidth int = ViewWidth/2 // gives floor, which is what we want
-var halfViewHeight int = ViewHeight/2
-
-
-type Client struct {
-	ID   string
-	Conn *websocket.Conn 
-	Pool *Pool
-	Position game.Coord
-	TerrainView [][]int8
-	AnimalView [][]int8	// view of animated layer
-	mutex sync.Mutex
-	PlayerCook player
-	Player game.Player
-}
-
-type player struct {
-	Avatar int8    `json:"avatar"`
-	Name string `json:"name"`		
-}
-
-type gridMap struct {
-	grid [][]int8	
+	"app/pkg/game"
+	"encoding/json"
+	"fmt"
+	"github.com/gorilla/websocket"
+	"log"
+	"net/http"
+	"net/url"
+	"strconv"
+	"sync"	
+) 
+ 
+type Client struct {	
+	Conn   *websocket.Conn 
+	Pool * Pool
+	mutex sync.Mutex 
+	player *game.Player
 }
 
 type Message struct {
@@ -50,242 +25,187 @@ type Message struct {
 }
 
 type Move struct {
-	Type int    `json:"type"`
+	Type int `json:"type"`
 	ID string    `json:"id"`
 	Direction int `json:"direction"`		
 }
 
 type WorldViewUpdate struct {
-	Type int    `json:"type"`	
-	TerrainView [][]int8 `json:"terrainView"`		
+	Type int `json:"type"`	
+	TerrainView [][]int8 `json:"terrainView"`
 	AnimalView [][]int8 `json:"animalView"`		
 }
 
 type ClientMessage struct {
-	Text string `json:"message"`
+	Text string `json:"mesage"`
 	Move int `json:"move"`	
 }
-
-func (g gridMap) InBounds(x, y int) bool {
-	if (x < 0 || y < 0 || x > ViewWidth-1 || y > ViewHeight-1) {
-		return false
-	}
-	return true;
-}
-func (g gridMap) IsOpaque(x, y int) bool {	
-	if g.grid[x][y] == 8 { // high mountain
-		return true
-	}
-	if g.grid[x][y] == 10 { // heavy forest
-		return true
-	}
-	return false
-}
-
 
 func NewClient(c *websocket.Conn, p *Pool, playerCookie *http.Cookie) *Client {
 
 	unescaped, _ := url.QueryUnescape(playerCookie.Value)
         
 	var playerMiddle struct {
-			Avatar string    `json:"avatar"`
-			Name string `json:"name"`		
+		Avatar string `json:"avatar"`
+		Name string `json:"name"`		
 	}
 
 	er := json.Unmarshal([]byte(unescaped), &playerMiddle)
 	if er != nil { 
-			fmt.Println("json Unmarshal error: ", er)
+		fmt.Println("json Unmarshal error: ", er)
 	}
-
-	// fmt.Println("Unmarshalled Player Cookie",playerMiddle.Name, playerMiddle.Avatar)
 
 	avatari, _ := strconv.Atoi(playerMiddle.Avatar) // read the avatar as a string from the JSON from the cookie, need it as int    
 	avatari8 := int8(avatari)
-	// fmt.Println(playerMiddle.Avatar,avatari, avatari8, playerCookie)
 
-	// Initialize client TerrainView slices
-	view := make([][]int8, ViewHeight)       // initialize a slice of viewHeight slices
-	for i:=0; i < ViewHeight; i++ {
-			view[i] = make([]int8, ViewWidth)  // initialize a slice of viewWidth in in each of viewHeight slices
-	}
+	fmt.Println("Avatar: ", avatari8)
 
-	// Initialize client animalView slices
-	animal := make([][]int8, ViewHeight)       // initialize a slice of viewHeight slices
-	for i:=0; i < ViewHeight; i++ {
-			animal[i] = make([]int8, ViewWidth)  // initialize a slice of viewWidth in in each of viewHeight slices
-	}
+	player := game.NewPlayer(
+		game.PlayerCookie{
+			Avatar  : avatari8,
+			Name: playerMiddle.Name,
+		}, p.WorldMap) 
 
 	client := &Client{ 
 		Conn: c,
-		Pool: p,
-		ID: uuid.New().String(),
-		Position: game.Coord{				
-			 // X: 240, // yew/lagoon
-			 // Y: 120, // yew/lagoon
-				X: 244, // britain
-				Y: 148, // britain
-			 // X: 10, // origin
-			 // Y: 10, // origin
-		},
-		TerrainView: view, 
-		AnimalView: animal,
-		PlayerCook: player{
-				Avatar: avatari8,
-				Name: playerMiddle.Name,
-		},    
-		Player: game.Player{},
+		Pool: p,		
+		player: player,
 	}
 
-	client.SetWorldView()
+	client.player.SetWorldView() 
 
 	return client;
 
 }
-
+ 
 func (c *Client) GetLocation() (game.Coord){	
-	return c.Position;
-}	
+	return c.player.Location
+}	 
 func (c *Client) GetID() (string){	
-	return c.ID;
-}	
-
-func (c *Client) SetWorldView() ([]*Client){	
-
-	aa := time.Now()
-	 
-	xStart := game.WrapMod((c.Position.X - halfViewWidth),game.WorldWidth);
-	yStart := game.WrapMod((c.Position.Y - halfViewHeight),game.WorldHeight);
-	
-	board := c.Pool.WorldMap.Grid
-	 
-	for x := 0; x < ViewWidth; x++ {	
-		xMap := game.WrapMod((xStart + x), game.WorldWidth)
-		for y := 0; y < ViewHeight; y++ {			
-			yMap := game.WrapMod((yStart + y), game.WorldHeight)			
-			c.TerrainView[x][y] = board[xMap][yMap]
-			c.AnimalView[x][y] = 0 // while we're at it, clear the AnimalView
-		}
-	}	
-
-	grid := make([][]int8, ViewHeight) 
-
-	// Initialize Gridmap - this might be funky, flipping the axes?
-	for x := 0; x < ViewWidth; x++ {		
-		grid[x] = make([]int8, ViewHeight)  
-		for y := 0; y < ViewHeight; y++ {						
-			grid[x][y]=c.TerrainView[x][y]
-		}
-	}
-
-	gridmap := gridMap{
-		grid: grid,
-	}
- 
-	// Calculate Field Of View
-	fovCalc := fov.New()	
-	fovCalc.Compute(gridmap, halfViewWidth, halfViewHeight, 10)
-	// Update View with visible tiles
-	for x :=0; x < ViewWidth; x++ {	
-		for y := 0; y < ViewHeight; y++ {	
-			if ! fovCalc.IsVisible(x, y) {
-				c.TerrainView[x][y] = 0
-			}			
-		} 
-	}
-
-	updatableOthers := []*Client{}
- 
-	// Add the other players onto the worldview, keep track of which ones are visible, they will need to be updated too
-	for other, _ := range c.Pool.Clients {
-		if (other.ID == c.ID) { continue }
-		px := other.Position.X
-		py := other.Position.Y   		
-		xrel := game.WrapMod(px - xStart, game.WorldWidth) // some head breaking math to figure out if other player is within the view
-		yrel := game.WrapMod(py - yStart, game.WorldHeight)
-		
-		// if other is within view and not on a shadowed tile
-		if ( (xrel < ViewWidth) && (yrel < ViewHeight) && c.TerrainView[xrel][yrel] != 0) {	
-			// c.TerrainView[xrel][yrel] = -1	
-			c.AnimalView[xrel][yrel] = other.PlayerCook.Avatar
-			fmt.Println("Adding an animal" , other.PlayerCook.Avatar)
-			
-			updatableOthers = append(updatableOthers,other)
-			
-		}				 
-	}	
-
-	bb := time.Now()
-	fmt.Println("Calculate view time: ", float64(bb.Nanosecond() - aa.Nanosecond()) / 1e9)
-
-	return updatableOthers;
-	  
+	return c.player.ID
+}	 
+func (c *Client) GetAvatar() (int8) {	
+	fmt.Println("Avatar is", c.player.PlayerCook.Avatar)
+	return c.player.PlayerCook.Avatar
 }	
 
 func (c *Client) readText(text string ) {
 	if text != "" {
 		message := Message{Type: 1, Body: string(text)}
-		c.Pool.Broadcast <- message
-		fmt.Printf("Got message: %#v\n",text)
+		c.Pool.Broadcast <- message 
+		fmt.Printf("Got message: %#v\n",text)   
 	}
 }
 
 // Send the view JSON to client to update their view of the world
 func (c *Client) updateClientViews() {
-	c.Conn.WriteJSON(WorldViewUpdate{Type: 4, TerrainView: c.TerrainView, AnimalView: c.AnimalView})
-}
-
-// Updates World View of self, and all other clients that are now within World View
-func (c *Client) updateAllClientsAfterMove() {
-
-	// Always update this client first
-	others := c.SetWorldView() // Now that client has moved, update their worldview
-
 	c.mutex.Lock()
- 	c.updateClientViews() 
-	c.mutex.Unlock()
-
-	// Update the other clients - only updating others that are within current view
-	// Trigger other players to update their worldview, since this player has updated		
-	for _, other := range others { 
-		if other.ID != c.ID {
-			go func(other *Client) {
-				other.SetWorldView()			
-				other.mutex.Lock()
-				defer other.mutex.Unlock()				
-				other.updateClientViews() 
-			}(other)			      
-		} 
-	}	
+	defer c.mutex.Unlock()
+	c.Conn.WriteJSON(WorldViewUpdate{Type: 4, TerrainView: c.player.TerrainView, AnimalView: c.player.AnimateView})
 }
 
-func (c *Client) CanSee(other *Client) bool {
-	return true
+// combine with showOtherClientsPlayers function
+func (c *Client) getVisibleClients()(map[*Client]bool) {
+	visibleClients := make(map[*Client]bool)
+	for other := range c.Pool.Clients {			
+		if (other.GetID() == c.GetID()) { continue }
+		canSee, _ , _ := c.player.CanSee(other.player)
+		if canSee {			
+			visibleClients[other] = true
+		}
+	}
+	return visibleClients
+}	
+
+// @todo refactor this func 
+func (c *Client) showOtherClientsPlayers()(map[*Client]bool) {
+	// Add the other players onto the worldview, keep track of which ones are visible, 
+// they will need to be updated too
+	
+	updatableClients := make(map[*Client]bool)
+
+	for other := range c.Pool.Clients {			
+		if (other.GetID() == c.GetID()) { continue }
+		canSee, xrel, yrel := c.player.CanSee(other.player)
+		if canSee {
+			fmt.Println("Can see")
+			c.player.AnimateView[xrel][yrel] = other.GetAvatar()						
+			updatableClients[other] = true
+		}		 
+	}
+
+	return updatableClients
 }
 
-// Retrieve a slice of all other Clients
-func (c *Client) GetOthers() []*Client{
+// Retrieve a slice of all oter Client
+func (c *Client) GetOthers() ([]*Client) {
 	others := []*Client{}
-	for other, _ := range c.Pool.Clients { 		
-		if (other.ID != c.ID) {
+	for other := range c.Pool.Clients { 		
+		if (other.player.ID != c.player.ID) {
 			others = append(others,other)
 		}
 	}
 	return others
 }
 
+func (c *Client) makeMove(newLocation game.Coord) {
+	// get list of clients with players in the view before the move 
+	updatableClientsBeforeMove := c.getVisibleClients()
+
+	// make move
+	c.player.Location = newLocation;
+
+	// Update player's view
+	c.player.SetWorldView() 
+
+	/* 
+	
+	@todo: this whole section is a good use case for channels.
+	
+	each player listens to a channel
+	
+	each player broadcasts to that chanel if they move
+	
+	if a move is picked up on the channel, update own view including new positions of other players in view
+
+	*/
+
+	// Get new list of visible clients, and update them to this clients view. @todo refactor 
+	updatableClients := c.showOtherClientsPlayers()	
+
+	// publish to the client
+	c.updateClientViews()  
+
+	// now merge updatableClients with those from before move:
+	for client, val := range updatableClientsBeforeMove {
+		updatableClients[client] = val
+	}
+
+	// Update the other clients - only updating others that are within current view
+	// Trigger other players to update theirown worldview, since this player has updated		
+	for other := range updatableClients { 
+		if other.GetID() != c.GetID() {
+			go func(other *Client) {
+				fmt.Println("Getting other player to update its view")		
+				other.player.SetWorldView()		
+				other.showOtherClientsPlayers()								
+				other.updateClientViews() 
+			}(other)	
+		}		      		  
+	}	
+}
+
 func (c *Client) readMove( move int)  {
 
-	fmt.Println("Client.readMove", move) 
-	
-	if move == 0 { 
+	if move== 0 { 
 		return 
-	}
+}
 	
-	newPosition, error := game.GetNewPosition( move, c.Position )	
+	newLocation, error := game.GetNewPosition( move, c.player.Location )	
 	if error != nil {
-		fmt.Println("No new position granted, bad move request ", c.ID)
+		fmt.Println("No new position granted, bad move request ", c.player.ID)
 		return 
-	}
+}
 	
 	// get "others": the slice of LocatableEntity (which is satisfied by Client) that are not self		
 	others := c.GetOthers()
@@ -293,19 +213,15 @@ func (c *Client) readMove( move int)  {
 	le := make([]game.LocatableEntity, len(others))
 	for i, other := range others {
 		le[i] = other
-	}
+}
 	
 	worldMap := c.Pool.WorldMap
-	if (! game.IsLocationValid(newPosition, *worldMap, le ) ){ 
+	if (! game.IsLocationValid(newLocation, *worldMap, le ) ){ 
 		return
 	}
 
-	// get list of clients in the view:
-
-	c.Position = newPosition;
-	
-	c.updateAllClientsAfterMove()
-			 
+c.makeMove(newLocation)
+ 
 }
 
 func (c *Client) Read() {	 
@@ -317,7 +233,7 @@ func (c *Client) Read() {
 	}()
 
 	for {		
-		var m = ClientMessage{}	
+		var m =ClientMessage{}	
 		err :=  c.Conn.ReadJSON(&m)	
 		if err != nil {
 			fmt.Printf("Read JSON Error")
@@ -325,7 +241,8 @@ func (c *Client) Read() {
 			return
 		}	
 
-		c.readText(m.Text)		
+		c.readText(m.Text)
 		c.readMove(m.Move)			
 	}
+
 }
