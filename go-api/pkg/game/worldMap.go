@@ -1,9 +1,6 @@
 package game
 
 import (
-	// "fmt"
-	// "math/rand"
-
 	"os"
 	"fmt"
 	"log"
@@ -11,7 +8,6 @@ import (
 	_ "image/png"
 	"time"
 	"path/filepath"
-
 )
 
 var WorldWidth, WorldHeight int
@@ -19,40 +15,6 @@ var WorldWidth, WorldHeight int
 type WorldMap struct {
 	Grid [][] int8
 }
-
-// range specification, note that min <= max
-type IntRange struct {
-	min, max int
-}
-
-/*
-// get next random value within the interval including min and max
-func (ir *IntRange) NextRandom(r* rand.Rand) int {
-	return r.Intn(ir.max - ir.min +1) + ir.min
-}
-*/
-
-/*
-func randomMap() *WorldMap {
-
-	myWorldMap := WorldMap{}
-	
-	r := rand.New(rand.NewSource(1))
-	ir := IntRange{0,2}	
-
-	for x := 0; x < Width; x++ {
-		for y := 0; y < Height; y++ {
-			// fmt.Printf("initializing map: x:%#v y:%#v\n", x, y)
-			myWorldMap.Grid[x][y] = ir.NextRandom(r)
-		}
-	}
-
-	// fmt.Printf("Worldmap:%#v \n", myWorldMap.Grid)
-
-	return &myWorldMap
-
-}	
-*/
 
 func (w WorldMap) getTerrain(location Coord) int8 {
 	return w.Grid[location.X][location.Y]
@@ -95,7 +57,7 @@ func imageArr_to_terrain_array(imageArr [][][3]uint32 ) [][]int8 {
 	return out
 }
 
-func get_tile_opacity (tile int) float32 {
+func get_tile_opacity (tile int8) float32 {
 	switch tile {
 		case 8: // high mountain
 		case 10: // heavy forest

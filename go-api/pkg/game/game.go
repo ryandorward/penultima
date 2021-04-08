@@ -37,12 +37,12 @@ func GetNewPosition(move int, position Coord) (Coord, error) {
 		case 13: // enter == ping == no move, just return current pos				
 			return position, nil
 		default: 		
-			return Coord{X: -1, Y: -1}, errors.New("Requested a non-move")
+			return Coord{X: -1, Y: -1}, errors.New("requested a non-move")
 	}
 	return position, nil;
 }	
 
-func IsLocationValid(location Coord, terrainMap TerrainMap, others []LocatableEntity ) bool {
+func IsLocationValid(location Coord, terrainMap TerrainMap, others map[LocatableEntity]bool ) bool {
 	
 	// Check if the tile is impassible	
 	terrain := terrainMap.getTerrain(location)
@@ -54,7 +54,7 @@ func IsLocationValid(location Coord, terrainMap TerrainMap, others []LocatableEn
 	}
 
 	// Check if a player is in the way:
-	for  _, other := range others { 	
+	for other := range others { 	
 		otherLocation := other.GetLocation()
 		if (otherLocation.X == location.X) && (otherLocation.Y == location.Y) {								
 			return false

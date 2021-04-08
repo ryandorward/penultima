@@ -44,11 +44,9 @@ func (p *Player) CanSee(other *Player) (bool, int, int) {
 	xrel := WrapMod(ox - xStart, WorldWidth) // some head breaking math to figure out if other player is within the view
 	yrel := WrapMod(oy - yStart, WorldHeight)
 	// if other is within view and not on a shadowed tile
-	if ( (xrel < ViewWidth) && (yrel < ViewHeight) && p.TerrainView[xrel][yrel] != 0) {		
-		fmt.Println("Can see")		
+	if ( (xrel < ViewWidth) && (yrel < ViewHeight) && p.TerrainView[xrel][yrel] != 0) {						
 		return true, xrel, yrel		
 	}			
-	fmt.Println("Can't see")		
 	return false, 0, 0
 }
 
@@ -81,7 +79,6 @@ func NewPlayer(cookieStuff PlayerCookie, worldMap *WorldMap) *Player {
 	player.SetWorldView() // initialize player's view
 	return player
 }
-
 
 func (p *Player) SetWorldView() {	
 
@@ -126,7 +123,6 @@ func (p *Player) SetWorldView() {
 			}			
 		} 
 	}
-
 
 	bb := time.Now()
 	fmt.Println("Calculate view time: ", float64(bb.Nanosecond() - aa.Nanosecond()) / 1e9)	  

@@ -106,8 +106,9 @@ func (c *Client) updateClientViews() {
 
 // combine with showOtherClientsPlayers function
 func (c *Client) getVisibleClients()(map[*Client]bool) {
+	others := c.getOthers()
 	visibleClients := make(map[*Client]bool)
-	for other := range c.Pool.Clients {			
+	for other := range others {			
 		if (other.GetID() == c.GetID()) { continue }
 		canSee, _ , _ := c.player.CanSee(other.player)
 		if canSee {			
@@ -118,31 +119,27 @@ func (c *Client) getVisibleClients()(map[*Client]bool) {
 }	
 
 // @todo refactor this func 
-func (c *Client) showOtherClientsPlayers()(map[*Client]bool) {
-	// Add the other players onto the worldview, keep track of which ones are visible, 
-// they will need to be updated too
-	
-	updatableClients := make(map[*Client]bool)
-
-	for other := range c.Pool.Clients {			
-		if (other.GetID() == c.GetID()) { continue }
+// Add the other players onto the worldview, keep track of which ones are visible, 
+// they will need to be updated too	
+func (c *Client) showOtherClientsPlayers()(map[*Client]bool) {	
+	others := c.getOthers()
+	updatableClients := make(map[*Client]bool)	
+	for other := range others {					
 		canSee, xrel, yrel := c.player.CanSee(other.player)
 		if canSee {
-			fmt.Println("Can see")
 			c.player.AnimateView[xrel][yrel] = other.GetAvatar()						
 			updatableClients[other] = true
 		}		 
 	}
-
 	return updatableClients
 }
 
 // Retrieve a slice of all oter Client
-func (c *Client) GetOthers() ([]*Client) {
-	others := []*Client{}
+func (c *Client) getOthers() (map[*Client]bool) {
+	others := make(map[*Client]bool)
 	for other := range c.Pool.Clients { 		
-		if (other.player.ID != c.player.ID) {
-			others = append(others,other)
+		if (other.GetID() != c.GetID()) {
+			others[other] = true
 		}
 	}
 	return others
@@ -159,15 +156,10 @@ func (c *Client) makeMove(newLocation game.Coord) {
 	c.player.SetWorldView() 
 
 	/* 
-	
-	@todo: this whole section is a good use case for channels.
-	
-	each player listens to a channel
-	
-	each player broadcasts to that chanel if they move
-	
+	@todo: this whole section is a good use case for channels. Is it though?	
+	each player listens to a channel	
+	each player broadcasts to that chanel if they move	
 	if a move is picked up on the channel, update own view including new positions of other players in view
-
 	*/
 
 	// Get new list of visible clients, and update them to this clients view. @todo refactor 
@@ -195,32 +187,32 @@ func (c *Client) makeMove(newLocation game.Coord) {
 	}	
 }
 
+func (c *Client)locationCheck(location game.Coord) bool {		
+	others := c.getOthers()
+	// Create slice of LocatableEntity from others
+	les := make(map[game.LocatableEntity]bool)
+	for other := range others {
+		les[other] = true
+	}	
+	worldMap := c.Pool.WorldMap
+	return  game.IsLocationValid(location, *worldMap, les )	
+}
+
 func (c *Client) readMove( move int)  {
 
-	if move== 0 { 
+	if move==0 { 
 		return 
-}
+	}
 	
 	newLocation, error := game.GetNewPosition( move, c.player.Location )	
 	if error != nil {
 		fmt.Println("No new position granted, bad move request ", c.player.ID)
 		return 
-}
-	
-	// get "others": the slice of LocatableEntity (which is satisfied by Client) that are not self		
-	others := c.GetOthers()
-	// Create slice of LocatableEntity from others
-	le := make([]game.LocatableEntity, len(others))
-	for i, other := range others {
-		le[i] = other
-}
-	
-	worldMap := c.Pool.WorldMap
-	if (! game.IsLocationValid(newLocation, *worldMap, le ) ){ 
-		return
 	}
-
-c.makeMove(newLocation)
+	
+	if c.locationCheck(newLocation) {
+		c.makeMove(newLocation)
+	}
  
 }
 

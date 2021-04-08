@@ -10,11 +10,7 @@ func (g gridMap) InBounds(x, y int) bool {
 	return true;
 }
 func (g gridMap) IsOpaque(x, y int) bool {	
-	if g.grid[x][y] == 8 { // high mountain
-		return true
-	}
-	if g.grid[x][y] == 10 { // heavy forest
-		return true
-	}
-	return false
+
+	return get_tile_opacity(g.grid[x][y]) < 0.5 
+	
 }
