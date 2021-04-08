@@ -2,7 +2,7 @@ import React from "react";
 
 export const Board = ({board, player}) => {          
 
-  console.log(board.animals)
+  console.log(board.animals, board.terrain)
 
   return (  
     <div className="board">

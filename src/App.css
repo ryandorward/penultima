@@ -127,7 +127,7 @@
 }
 
 .board .tile-11 { /* beach */   
-  background-image: url("./images/Beach.png");
+  background-image: url("./images/Beach6.png");
 }
 .board .tile-12 { /* desert cactus */  
   background-position: -480px -32px;
@@ -140,7 +140,6 @@
 .board .tile-14 { /* marsh */  
   background-position: -128px 0;
 }
-
 
 .avatar-tile {
   width: 32px;
@@ -170,4 +169,16 @@
   left: 0;
   width: 32px;
   height: 32px;
+}
+
+.App .avatarSelectorRadios {
+  flex-direction: row;
+}
+
+.avatar-formControlLabel .avatar-tile {
+  border: 2px solid #000000;
+}
+
+.avatar-formControlLabel .avatar-tile.checked {  
+  border-color: red;
 }

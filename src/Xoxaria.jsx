@@ -4,7 +4,7 @@ import { ChatHistory } from "./ChatHistory";
 import { ChatInput } from "./ChatInput";
 import { Board } from "./Board";
 
-export const Xoxaria = ({player, resetPlayer}) => {  
+export const Xoxaria = ({player, resetPlayer, setPlay}) => {  
 
   const [messages, setMessages] = useState([]);   
 
@@ -54,14 +54,20 @@ export const Xoxaria = ({player, resetPlayer}) => {
     }
   }
 
+  const updatePlay = (e) => {
+    setPlay(false)
+  }
+
   return (
     <>    
       <h2>Player: { player.name }</h2> 
-      <button onClick={resetPlayer}>Start over!</button>      
+      <button onClick={updatePlay}>Change player!</button>  
+      <br/>  
       <Board 
         board={board}
         player={player} 
       />         
+
       <ChatHistory messages={messages} />
       <ChatInput keydown={send} />                 
     </>

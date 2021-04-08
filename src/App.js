@@ -13,6 +13,7 @@ function App() {
       name: ''
     }
   ); 
+  const [play, setPlay] = useState(false);  
 
   const updatePlayer = player => {
     setPlayer(player)
@@ -25,25 +26,26 @@ function App() {
     cookies.set('player',player)
   }
 
-  // cookies.remove('player')
-
+  
   return (
     <div className="App">
       <header 
         className="App-header"
         key = {player.name}      
-      > 
-      { player.name }
-        { ! player.name && 
+      >        
+        { ! play && 
           <PlayerBuilder 
             player={player}
             setPlayer={updatePlayer}
+            setPlay={setPlay}
+            key="1"
           />
         }
-        {player.name && (   
+        {play && (   
           <Xoxaria           
             player = {player }           
             resetPlayer = {resetPlayer} 
+            setPlay={setPlay}
           />                     
         )}
       </header>
