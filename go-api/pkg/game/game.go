@@ -24,22 +24,22 @@ func WrapMod (x, mod int) int{
 	return (x%mod + mod)%mod;
 }
 
-func GetNewPosition(move int, position Coord) (Coord, error) {	
+func GetNewLocation(move int, location Coord) (Coord, error) {	
 	switch move {
 		case 38: // up  
-			position.Y = WrapMod((position.Y - 1), WorldHeight); 		
+			location.Y = WrapMod((location.Y - 1), WorldHeight); 		
 		case 40: // down
-			position.Y = WrapMod((position.Y + 1), WorldHeight); 		
+			location.Y = WrapMod((location.Y + 1), WorldHeight); 		
 		case 37: // left
-			position.X = WrapMod((position.X - 1), WorldWidth);		
+			location.X = WrapMod((location.X - 1), WorldWidth);		
 		case 39: // right
-			position.X = WrapMod((position.X + 1), WorldWidth); 
+			location.X = WrapMod((location.X + 1), WorldWidth); 
 		case 13: // enter == ping == no move, just return current pos				
-			return position, nil
+			return location, nil
 		default: 		
 			return Coord{X: -1, Y: -1}, errors.New("requested a non-move")
 	}
-	return position, nil;
+	return location, nil;
 }	
 
 func IsLocationValid(location Coord, terrainMap TerrainMap, others map[LocatableEntity]bool ) bool {

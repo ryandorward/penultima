@@ -1,7 +1,6 @@
-package websocket
+package game
 
-import (
-	"app/pkg/game"
+import (	
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -16,7 +15,7 @@ type Client struct {
 	Conn   *websocket.Conn 
 	Pool * Pool
 	mutex sync.Mutex 
-	player *game.Player
+	player *Player
 }
 
 type Message struct {
@@ -60,8 +59,8 @@ func NewClient(c *websocket.Conn, p *Pool, playerCookie *http.Cookie) *Client {
 
 	fmt.Println("Avatar: ", avatari8)
 
-	player := game.NewPlayer(
-		game.PlayerCookie{
+	player := NewPlayer(
+		PlayerCookie{
 			Avatar  : avatari8,
 			Name: playerMiddle.Name,
 		}, p.WorldMap) 
@@ -78,7 +77,7 @@ func NewClient(c *websocket.Conn, p *Pool, playerCookie *http.Cookie) *Client {
 
 }
  
-func (c *Client) GetLocation() (game.Coord){	
+func (c *Client) GetLocation() (Coord){	
 	return c.player.Location
 }	 
 func (c *Client) GetID() (string){	
@@ -145,7 +144,7 @@ func (c *Client) getOthers() (map[*Client]bool) {
 	return others
 }
 
-func (c *Client) makeMove(newLocation game.Coord) {
+func (c *Client) makeMove(newLocation Coord) {
 	// get list of clients with players in the view before the move 
 	updatableClientsBeforeMove := c.getVisibleClients()
 
@@ -187,15 +186,15 @@ func (c *Client) makeMove(newLocation game.Coord) {
 	}	
 }
 
-func (c *Client)locationCheck(location game.Coord) bool {		
+func (c *Client)locationCheck(location Coord) bool {		
 	others := c.getOthers()
 	// Create slice of LocatableEntity from others
-	les := make(map[game.LocatableEntity]bool)
+	les := make(map[LocatableEntity]bool)
 	for other := range others {
 		les[other] = true
 	}	
 	worldMap := c.Pool.WorldMap
-	return  game.IsLocationValid(location, *worldMap, les )	
+	return  IsLocationValid(location, *worldMap, les )	
 }
 
 func (c *Client) readMove( move int)  {
@@ -204,7 +203,7 @@ func (c *Client) readMove( move int)  {
 		return 
 	}
 	
-	newLocation, error := game.GetNewPosition( move, c.player.Location )	
+	newLocation, error := GetNewLocation( move, c.player.Location )	
 	if error != nil {
 		fmt.Println("No new position granted, bad move request ", c.player.ID)
 		return 
@@ -226,7 +225,7 @@ func (c *Client) Read() {
 
 	for {		
 		var m =ClientMessage{}	
-		err :=  c.Conn.ReadJSON(&m)	
+		err := c.Conn.ReadJSON(&m)	
 		if err != nil {
 			fmt.Printf("Read JSON Error")
 			log.Println(err)

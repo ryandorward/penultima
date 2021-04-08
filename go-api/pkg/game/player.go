@@ -35,6 +35,7 @@ func (p *Player) GetID() (string){
 	return p.ID;
 }	
 
+// Can this player see the other? If so, return it's relative location
 func (p *Player) CanSee(other *Player) (bool, int, int) {
 	xStart := WrapMod((p.Location.X - halfViewWidth),WorldWidth);
 	yStart := WrapMod((p.Location.Y - halfViewHeight),WorldHeight);

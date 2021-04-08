@@ -1,9 +1,8 @@
-package websocket
+package game
 
 import (
 	"fmt"
-	"strconv"
-	"app/pkg/game"
+	"strconv"	
 )
 
 type Pool struct {
@@ -11,7 +10,7 @@ type Pool struct {
 	Unregister chan *Client
 	Clients    map[*Client]bool
 	Broadcast  chan Message
-	WorldMap *game.WorldMap
+	WorldMap *WorldMap
 }
 
 func NewPool() *Pool {
@@ -20,7 +19,7 @@ func NewPool() *Pool {
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
 		Broadcast:  make(chan Message),		
-		WorldMap: game.NewWorldMap(),
+		WorldMap: NewWorldMap(),
 	}
 }
 
@@ -37,7 +36,6 @@ func (pool *Pool) Start() {
 					client.Conn.WriteJSON(Message{Type: 2, Body: strconv.Itoa(len(pool.Clients))})
 				}
 			
-
 			case client := <-pool.Unregister:
 				delete(pool.Clients, client)
 				fmt.Println("Size of Connection Pool: ", len(pool.Clients))
