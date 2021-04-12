@@ -42,7 +42,7 @@ func GetNewLocation(move int, location Coord) (Coord, error) {
 	return location, nil;
 }	
 
-func IsLocationValid(location Coord, terrainMap TerrainMap, others map[LocatableEntity]bool ) bool {
+func IsLocationValid(location Coord, terrainMap TerrainMap, others map[LocatableEntity]bool ) bool {	
 	
 	// Check if the tile is impassible	
 	terrain := terrainMap.getTerrain(location)

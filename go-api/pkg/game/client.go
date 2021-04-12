@@ -55,14 +55,12 @@ func NewClient(c *websocket.Conn, p *Pool, playerCookie *http.Cookie) *Client {
 	}
 
 	avatari, _ := strconv.Atoi(playerMiddle.Avatar) // read the avatar as a string from the JSON from the cookie, need it as int    
-	avatari8 := int8(avatari)
-
-	fmt.Println("Avatar: ", avatari8)
+	avatari8 := int8(avatari)	
 
 	player := NewPlayer(
 		PlayerCookie{
 			Avatar  : avatari8,
-			Name: playerMiddle.Name,
+			Name: playerMiddle.Name, 
 		}, p.WorldMap) 
 
 	client := &Client{ 
@@ -72,21 +70,31 @@ func NewClient(c *websocket.Conn, p *Pool, playerCookie *http.Cookie) *Client {
 	}
 
 	client.player.SetWorldView() 
-
 	return client;
-
 }
  
 func (c *Client) GetLocation() (Coord){	
 	return c.player.Location
 }	 
+
 func (c *Client) GetID() (string){	
 	return c.player.ID
 }	 
-func (c *Client) GetAvatar() (int8) {	
-	fmt.Println("Avatar is", c.player.PlayerCook.Avatar)
+
+func (c *Client) GetAvatar() (int8) {		
 	return c.player.PlayerCook.Avatar
 }	
+
+// Retrieve slice of all other Clients as LocatableEntities
+func (c *Client) GetOthers() (map[LocatableEntity]bool) { 
+	others := c.getOtherClients()
+	// Create slice of LocatableEntity from others
+	les := make(map[LocatableEntity]bool)
+	for other := range others {
+		les[other] = true
+	}	
+	return les
+}
 
 func (c *Client) readText(text string ) {
 	if text != "" {
@@ -96,45 +104,25 @@ func (c *Client) readText(text string ) {
 	}
 }
 
-// Send the view JSON to client to update their view of the world
-func (c *Client) updateClientViews() {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.Conn.WriteJSON(WorldViewUpdate{Type: 4, TerrainView: c.player.TerrainView, AnimalView: c.player.AnimateView})
-}
-
-// combine with showOtherClientsPlayers function
-func (c *Client) getVisibleClients()(map[*Client]bool) {
-	others := c.getOthers()
+// Flag updateView switches whether or not to update clients view with the visible others
+func (c *Client) getVisibleClients(updateView bool)(map[*Client]bool) {
+	others := c.getOtherClients()
 	visibleClients := make(map[*Client]bool)
 	for other := range others {			
 		if (other.GetID() == c.GetID()) { continue }
-		canSee, _ , _ := c.player.CanSee(other.player)
+		canSee, xrel, yrel := c.player.CanSee(other.player)
 		if canSee {			
 			visibleClients[other] = true
+			if updateView {
+				c.player.AnimateView[xrel][yrel] = other.GetAvatar()
+			}
 		}
 	}
 	return visibleClients
 }	
 
-// @todo refactor this func 
-// Add the other players onto the worldview, keep track of which ones are visible, 
-// they will need to be updated too	
-func (c *Client) showOtherClientsPlayers()(map[*Client]bool) {	
-	others := c.getOthers()
-	updatableClients := make(map[*Client]bool)	
-	for other := range others {					
-		canSee, xrel, yrel := c.player.CanSee(other.player)
-		if canSee {
-			c.player.AnimateView[xrel][yrel] = other.GetAvatar()						
-			updatableClients[other] = true
-		}		 
-	}
-	return updatableClients
-}
-
-// Retrieve a slice of all oter Client
-func (c *Client) getOthers() (map[*Client]bool) {
+// Retrieve slice of all other Client
+func (c *Client) getOtherClients() (map[*Client]bool) {
 	others := make(map[*Client]bool)
 	for other := range c.Pool.Clients { 		
 		if (other.GetID() != c.GetID()) {
@@ -144,57 +132,45 @@ func (c *Client) getOthers() (map[*Client]bool) {
 	return others
 }
 
+// Send the view JSON to client to update their view of the world
+func (c *Client) updateClientViews() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.Conn.WriteJSON(WorldViewUpdate{Type: 4, TerrainView: c.player.TerrainView, AnimalView: c.player.AnimateView})
+}
+
 func (c *Client) makeMove(newLocation Coord) {
 	// get list of clients with players in the view before the move 
-	updatableClientsBeforeMove := c.getVisibleClients()
+	updatableClientsBeforeMove := c.getVisibleClients(false)	
+	c.player.Location = newLocation // make move	
+	c.player.SetWorldView() // Update player's view
 
-	// make move
-	c.player.Location = newLocation;
-
-	// Update player's view
-	c.player.SetWorldView() 
-
-	/* 
-	@todo: this whole section is a good use case for channels. Is it though?	
-	each player listens to a channel	
-	each player broadcasts to that chanel if they move	
-	if a move is picked up on the channel, update own view including new positions of other players in view
-	*/
-
-	// Get new list of visible clients, and update them to this clients view. @todo refactor 
-	updatableClients := c.showOtherClientsPlayers()	
+	// Get new list of visible clients, and update them to this clients view, 
+	// then merge with those visible before
+	updatableClients := c.getVisibleClients(true)		
+	for client, val := range updatableClientsBeforeMove { 
+		updatableClients[client] = val
+	}
 
 	// publish to the client
 	c.updateClientViews()  
 
-	// now merge updatableClients with those from before move:
-	for client, val := range updatableClientsBeforeMove {
-		updatableClients[client] = val
-	}
-
 	// Update the other clients - only updating others that are within current view
-	// Trigger other players to update theirown worldview, since this player has updated		
-	for other := range updatableClients { 
-		if other.GetID() != c.GetID() {
-			go func(other *Client) {
-				fmt.Println("Getting other player to update its view")		
-				other.player.SetWorldView()		
-				other.showOtherClientsPlayers()								
+	// Trigger other players to update their own worldview, since this player has updated		
+	for other := range updatableClients { 	
+			go func(other *Client) {				
+				other.player.SetWorldView()					
+				other.getVisibleClients(true)							
 				other.updateClientViews() 
-			}(other)	
-		}		      		  
+			}(other)				      		  
 	}	
+
 }
 
 func (c *Client)locationCheck(location Coord) bool {		
-	others := c.getOthers()
-	// Create slice of LocatableEntity from others
-	les := make(map[LocatableEntity]bool)
-	for other := range others {
-		les[other] = true
-	}	
-	worldMap := c.Pool.WorldMap
-	return  IsLocationValid(location, *worldMap, les )	
+	les := c.GetOthers()
+	worldMap := c.player.WorldMap
+	return IsLocationValid(location, *worldMap, les )	
 }
 
 func (c *Client) readMove( move int)  {
