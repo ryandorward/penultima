@@ -4,7 +4,7 @@ export const Message = ({message}) => {
     
   return (  
     <div className="Message">
-      {message.body}
+      <>{">"} {message}</>
     </div>
   )    
 

@@ -1,0 +1,373 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+.App {
+  background-color: #000;
+}
+
+.board {
+  width: 480px;
+  height: 480px;
+  border: 1px solid;
+}
+
+.board .row {
+  width: 480px;
+  height: 32px;
+  float: left;
+}
+.gemPeer .row {
+  height: 3px;
+}
+
+.board .cell {
+  width: 32px;
+  height: 32px;
+  float: left;
+  position: relative;
+} 
+.gemPeer .cell {
+  height: 3px;
+  width: 3px;
+}
+
+.board .tile {
+  background-image: url("../images/Ultima_5_-_Tiles-pc-doubled.png");  
+}
+
+.board .tile--1 { /* hero */
+  background-position: -384px -320px;
+}  
+
+.board .tile-0 {
+  background-color: #000;
+  background-image: none;  
+}
+
+@keyframes westerly {
+  0% { background-position: 0 0; }
+  100% { background-position: 32px 0; }
+}
+@keyframes easterly {
+  0% { background-position: 32px 0; }
+  100% { background-position: 0px 0; }
+}
+@keyframes northerly {
+  0% { background-position: 0 0px; }
+  100% { background-position: 0 32px; }
+}
+@keyframes southerly {
+  0% { background-position: 0 32px; }
+  100% { background-position: 0 0px; }
+}
+@keyframes nowind {
+  0% { background-position: 0 0px; }
+  100% { background-position: 0 0px; }
+}
+.board .tile-1,
+.board .tile-2,
+.board .tile-3 {
+  background-repeat: repeat;
+  /* animation: nowind 0s linear infinite; */  
+}
+.board.animate .tile-1,
+.board.animate .tile-2,
+.board.animate .tile-3 { 
+  animation: nowind 0s linear infinite;
+}
+.board.wind-north .tile-1,
+.board.wind-north .tile-2,
+.board.wind-north .tile-3 {
+  background-repeat: repeat; 
+}
+.board.animate.wind-north .tile-1,
+.board.animate.wind-north .tile-2,
+.board.animate.wind-north .tile-3 {
+  animation-name: northerly;
+  animation-duration: 10s
+}
+
+.board.animate.wind-east .tile-1,
+.board.animate.wind-east .tile-2,
+.board.animate.wind-east .tile-3 {
+  animation-name: easterly;
+  animation-duration: 10s
+}
+.board.animate.wind-south .tile-1,
+.board.animate.wind-south .tile-2,
+.board.animate.wind-south .tile-3 {
+  animation-name: southerly;
+  animation-duration: 10s
+}
+.board.animate.wind-west .tile-1,
+.board.animate.wind-west .tile-2,
+.board.animate.wind-west .tile-3 {
+  animation-name: westerly;
+  animation-duration: 10s
+}
+
+.board .tile-1 { /* deep water */
+  background-color:#12809b; /* #0000aa;*/
+  /* background-position: -32px 0; */
+  background-image: url("../images/water-deep.png");   
+}
+.board .tile-2 { /* medium water */
+  background-color:#6ba4b4; /* #5555ff; */
+  /* background-position: -64px 0; */
+  background-image: url("../images/water-medium.png");   
+}
+.board .tile-3 { /* shallow water */
+  background-color: #90c2d1;  /* #55ffff; */
+  /* background-position: -96px 0; */
+  background-image: url("../images/water-shallow.png");   
+}
+
+.board .tile-4 { /* marsh */
+  background-color: #80caa0; /*rgb(94, 201, 174);*/
+  background-position: -128px 0;
+  
+}
+.board .tile-5 { /* grass */
+  background-color:#a4d093; /* #55ff55;  */
+  background-position: -160px 0;
+}
+
+.board .tile-6 { /* foothill */ 
+  background-position: -352px 0;
+  background-color: #555; /*#a6aa94;*/
+}
+.board .tile-7 { /* low mountain */  
+  background-position: -384px 0;
+  background-color: #aaaaaa; /*#868685;*/
+}
+.board .tile-8 { /* high mountain */  
+  background-position: -416px 0;
+  background-color: #fff; /* #353535;  */
+}
+.board .tile-9 { /* light forest */  
+  background-position: -256px 0;
+  background-color: #9aac36; /*#00aa00;   */
+}
+.board .tile-10 { /* heavy forest */  
+  background-position: -320px 0;
+  background-color: #7d7e1c;
+}
+
+.board .tile-11 { /* beach */   
+  background-image: url("../images/Beach6.png");
+  background-color: #ffff33;
+}
+.board .tile-12 { /* desert cactus */  
+  background-position: -480px -32px;
+  background-color: #f4d95a;
+}
+
+.board .tile-13 { /* desert */  
+  background-position: -224px 0;
+  background-color: #f4d95a;
+}
+
+.board .tile-14 { /* marsh */  
+  background-position: -128px 0;
+  background-color: #80caa0; /*rgb(94, 201, 174);*/
+}
+
+@keyframes avatar1 {
+  from { background-position: -384px  -320px; }
+  to { background-position: -512px  -320px; } 
+}
+
+.board.animate .tile-101,
+.board.animate .tile-102,
+.board.animate .tile-103,
+.board.animate .tile-104,
+.board.animate .tile-105,
+.board.animate .tile-106 {
+  animation: avatar1 4s steps(4, end) infinite; 
+}
+
+.avatar-tile,
+.board .tile-101 {
+  width: 32px;
+  height: 32px;
+  background-image: url("../images/Ultima_5_-_Tiles-pc-doubled.png");
+  background-position: -384px -320px;   
+  /*animation: avatar1 4s steps(4, end) infinite; */
+}
+@keyframes avatar2 {
+  from { background-position: -256px -320px; }
+  to { background-position: -384px  -320px; } 
+}
+.avatar-tile.avatar-tile-102,
+.board .tile-102 { 
+  background-position: -256px -320px;  
+}
+.board.animate .tile-102 {
+  animation-name: avatar2;
+}
+
+@keyframes avatar3 {
+  from { background-position: -128px -320px; }
+  to { background-position: -256px  -320px; } 
+}
+.avatar-tile.avatar-tile-103,
+.board .tile-103 { 
+  background-position: -128px -320px;   
+}
+.board.animate .tile-103 {
+  animation-name: avatar3;
+}
+
+@keyframes avatar4 {
+  from { background-position: 0px -320px; }
+  to { background-position: -128px  -320px; } 
+}
+.avatar-tile.avatar-tile-104,
+.board .tile-104 { 
+  background-position: 0 -320px;   
+}
+.board.animate .tile-104 {
+  animation-name: avatar4;
+}
+
+@keyframes avatar5 {
+  from { background-position: -512px -320px; }
+  to { background-position: -640px  -320px; } 
+}
+.avatar-tile.avatar-tile-105,
+.board .tile-105 { 
+  background-position: -512px -320px;   
+}
+.board.animate .tile-105 {
+  animation-name: avatar5;
+}
+
+@keyframes avatar6 {
+  from { background-position: -640px -320px; }
+  to { background-position: -768px  -320px; } 
+}
+.avatar-tile.avatar-tile-106,
+.board .tile-106 { 
+  background-position: -672px -320px;  
+}
+.board.animate .tile-106 {
+  animation-name: avatar6;
+}
+
+.board.gemPeer {
+  position: relative;
+}
+
+.board.gemPeer .tile {
+  background-image: none;
+}
+
+.board.gemPeer .center,
+.board.gemPeer .center-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border: 1px solid red;
+  border-radius: 6px;
+  transform: translate(-50%, -50%);
+}
+.board.gemPeer .center { 
+  width: 0px;
+  height: 0px;
+}
+.board.gemPeer .center-ring {
+  border-color: rgba(255,0,0, 0.4);
+  box-shadow: 0 0 0 rgba(255,0,0, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {   
+    box-shadow: 0 0 0 0 rgba(255,0,0, 0.4);
+  }
+  70% {     
+    box-shadow: 0 0 0 20px rgba(255,0,0, 0);
+  }
+  100% {     
+    box-shadow: 0 0 0 0 rgba(255,0,0, 0);
+  }
+}
+
+
+
+.animal-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+}
+
+.App .avatarSelectorRadios {
+  flex-direction: row;
+}
+
+.avatar-formControlLabel .avatar-tile {
+  border: 2px solid #000000;
+}
+
+.avatar-formControlLabel .avatar-tile.checked {  
+  border-color: red;
+}
+
+.console { 
+  border: 1px solid;
+  overflow: hidden;
+  text-align: left;
+  padding: 10px;
+  height: 460px;
+  position: relative;
+}
+
+.console-inner {
+  bottom: 0;
+  position: absolute;
+}
+
+.console .Message {
+  color: #aaa;
+}
+.console .Message:last-child {
+  color: #fff;
+}
+
+.top-widgets {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-gap: 10px;
+  width: 70%;
+  margin-bottom: 20px;
+}
+
+.wrap-board-console,
+.above-board-console-bar {
+  display: grid;
+  grid-template-columns: 10fr 6fr;
+  grid-gap: 5px;  
+}
+.wrap-board-console {
+  margin-bottom: 20px;
+}

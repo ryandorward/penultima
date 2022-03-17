@@ -1,45 +1,44 @@
 // api/index.js
 
-var socket = new WebSocket("ws://192.168.0.151:8083/ws");
+// var socket = new WebSocket("ws://192.168.0.151:8084/ws");
 
-let connect = ({messageCallback, moveCallback, updateWorldViewCallback}) => {
-  // console.log("connect");
+import { host } from './settings';
 
+var socket = new WebSocket('ws://'+host+':8084/ws'); 
+
+let connect = ({messageCallback}) => {  
+
+  // console.log('connect',socket.readyState)
+  
+  /*
+  if ( socket.readyState === WebSocket.CLOSED)
+    console.log('socket is closed')
+  else if ( socket.readyState === WebSocket.CLOSING)
+    console.log('socket is closing')
+  else if ( socket.readyState === WebSocket.OPEN)
+    console.log('socket is open')
+  else if ( socket.readyState === WebSocket.CONNECTING)
+    console.log('socket is connecting') 
+  else 
+    console.log('socket is unknown')
+  */
+ 
   socket.onopen = () => {
-    console.log("Successfully Connected");
-
-    requestMove(13)       
-
+    console.log("onopen","Successfully Connected");
+    // requestMove(13)
   };
 
   socket.onmessage = msg => {            
-    const message = JSON.parse(msg.data)    
-     // what kind of message? 
-    switch (message.type) {
-      case 1: 
-        messageCallback(message);
-        break;
-      case 2:
-        // console.log("User message received:",message)
-        break;
-      case 3: 
-        moveCallback(message)       
-        break;
-      case 4: 
-        updateWorldViewCallback(message)       
-        break;
-      default:
-        console.log("Didn't catch message type",message)
-    }
-        
+    const message = JSON.parse(msg.data)        
+    messageCallback(message)     
   };
 
   socket.onclose = event => {
-    console.log("Socket Closed Connection: ", event);
+    console.log('onclose',"Socket Closed Connection: ", event);
   };
 
   socket.onerror = error => {
-    console.log("Socket Error: ", error);
+    console.log('onerror',"Socket Error: ", error);
   };
 };
 
@@ -50,11 +49,27 @@ let sendMsg = msg => {
   socket.send(sendable);
 };
 
-let requestMove = keycode => {   
-  // console.log("requesting move") ;
+let requestMove = move => {  
+  if (socket.readyState === WebSocket.CLOSING || socket.readyState === WebSocket.CLOSED) {
+    console.log('Socket is closed/closing. Cannot send move')   
+    alert("Connection to the game has closed! Adventure awaits, try reloading ↻ this page.")
+  }
   socket.send(JSON.stringify({
-    "move": keycode
+    "move": move
+  }));
+  return "move successful"
+};
+
+let requestUpdateAvatar = id => { 
+  socket.send(JSON.stringify({
+    "avatar": {id: parseInt(id)}
   }));
 };
 
-export { connect, sendMsg, requestMove };
+let requestPeerGem = move => {  
+  socket.send(JSON.stringify({
+    "peerGem": {}
+  }));
+};
+
+export { connect, sendMsg, requestMove, requestUpdateAvatar, requestPeerGem  };

@@ -33,7 +33,7 @@ export const PlayerBuilder = ({player,setPlayer, setPlay}) => {
       </div> 
       <AvatarSelector 
         avatar={player.avatar}
-        setAvatar={setAvatar}
+        setAvatar={setAvatar}       
       />
       <br/><br/>
        
