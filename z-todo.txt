@@ -1,0 +1,26 @@
+Keystroke commands:
+  L - look
+  T - talk
+
+Sun cycles + night time
+
+Moon cycles + display moon phase
+
+Wind
+
+Animate tiles
+
+Swimming + Tides
+
+Towns etc
+
+NPCs + monsters
+
+
+How to see dependency graph:
+  sudo /Users/ryandorward/Documents/go/bin/godepgraph -novendor -s -i github.com/gorilla/websocket,github.com/google/uuid,github.com/gorilla/sessions,github.com/lib/pq,golang.org/x/crypto/bcrypt cmd/app/server.go | dot -Tpng -o godepgraph.png
+
+How to remove db volume and recreate:
+  docker-compose down
+  docker volume rm ultima_data
+  docker-compose up

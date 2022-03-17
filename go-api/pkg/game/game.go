@@ -61,4 +61,5 @@ func IsLocationValid(location Coord, terrainMap TerrainMap, others map[Locatable
 		}								
 	}		
 	return true;
+	
 }

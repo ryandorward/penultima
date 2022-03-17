@@ -1,1 +1,1 @@
-go run cmd/app/server.go
+go run cmd/app/*.go

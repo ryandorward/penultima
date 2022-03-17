@@ -1,2 +1,2 @@
 go mod download
-go build -o /bin/app cmd/app/server.go && /bin/app
+go build -o /bin/app cmd/app/*.go && /bin/app

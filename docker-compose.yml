@@ -96,23 +96,23 @@ services:
   #  networks:
   #     - local
   #  command: bash -c "./scripts/production.sh"
-  go-api-development:
-    hostname: go-api-development
-    restart: unless-stopped
-    build:
-      context: ./go-api
-      dockerfile: Dockerfile
-      target: dev
-    volumes:
-      - type: bind
-        source: ./go-api
-        target: /home/app
-    working_dir: /home/app
-    ports:
-      - "8083:8080" 
-    networks:
-       - local
-    command: bash -c "go mod download && make serve"
+  #go-api-development:
+  #  hostname: go-api-development
+  #  restart: unless-stopped
+  #  build:
+  #    context: ./go-api
+  #    dockerfile: Dockerfile
+  #    target: dev
+  #  volumes:
+  #    - type: bind
+  #      source: ./go-api
+  #      target: /home/app
+  #  working_dir: /home/app
+  #  ports:
+  #    - "8083:8080" 
+  #  networks:  
+  #     - local
+  #  command: bash -c "go mod download && make serve"
   server-development:
     hostname: server-development
     restart: unless-stopped
@@ -126,10 +126,30 @@ services:
         target: /home/app
     working_dir: /home/app
     ports:
-      - "8084:8080" 
+      - "8084:8085" 
     networks:
       - local
     command: bash -c "go mod download && make serve"
+  db:   
+    image: postgres
+    restart: always      
+    volumes:
+      - data:/var/lib/postgresql/data  
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql 
+    environment:
+      - POSTGRES_USER=moohead
+      - POSTGRES_PASSWORD=5f*79SrR6)%_G
+      - POSTGRES_DB=penultima 
+      #- POSTGRES_USER=${DB_USER}
+      #- POSTGRES_PASSWORD=${DB_PASSWORD}
+      #- POSTGRES_DB=${DB_NAME}
+      #- DATABASE_HOST=${DB_HOST}   
+    ports:
+      - 5432:5432  
+    networks:
+      - local
 networks:
     local:
       driver: bridge
+volumes: 
+  data:         

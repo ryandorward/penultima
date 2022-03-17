@@ -1,82 +1,78 @@
 package main
 
 import (
-    "fmt"
-    "net/http"    
-	"app/pkg/websocket"          
-    "app/pkg/game" 
+	"fmt"
+	"log"
+	"net/http"
+
+	"app/pkg/game"
+	"app/pkg/model"
+  "app/pkg/store"
+	//"github.com/floralbit/dungeon/store"
+	"github.com/gorilla/websocket"
+	// "os"
 )
 
-func serveWs(pool *game.Pool, w http.ResponseWriter, r *http.Request) {
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	}, 
+}
+
+func setResponseHeaders (w http.ResponseWriter) {
+
+
+}
  
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-    fmt.Println("WebSocket Endpoint Hit")
+func main() { 	
+	// pages
+	// http.HandleFunc("/", handleIndex)
+	// http.HandleFunc("/game", handleGame)
+	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../public/static"))))
 
-    playerCookie, err := r.Cookie("player")
-    if err != nil {
-        fmt.Println("Cookie error:", err.Error())
-    } else {
-        fmt.Println("Player Cookie",playerCookie.Value)
-    }
-        
-    conn, err := websocket.Upgrade(w, r)
-    if err != nil {
-        fmt.Fprintf(w, "%+v\n", err)
-    }
+	// endpoints
+	http.HandleFunc("/login", handleLogin)
+	http.HandleFunc("/register", handleRegister)
+	http.HandleFunc("/logout", handleLogout)
 
-    client := game.NewClient(conn, pool, playerCookie)
+	// websocket
+	http.HandleFunc("/ws", handleWs) 
 
-    /* New plan: ? 
+	store.Init() // connect to db
 
-    make Client in it's own package
-    make new player here 
-    player is dependent on client package
-    player has a field called client that uses the Client struct 
-    
-    make new Client here in this serveWS func
-    make client the player's client, as in player.client := client
-    pool will no longer register the clients, just the players
+	go game.Run() // kick off gameloop
 
-    look closely at Client.Read() method. Will need to be able to do that even when client is an 
-    independent property of player. 
-
-    Client.Read will need to maybe receive a pointer to the player, and satisfy the clients interface, doing:
-    - unregister <- will trigger unregister of player from pool
-    - readText(string text)
-    - readMove(move int)
-
-    Client will expect a connection to the player via a playerInterface, which has those above methods
-    so pseudo code will look like
-
-    player := NewPlayer()
-    client := NewClient()
-    client.player = player // <- player satisfies clients playerInterce, which expects the above 3 methods
-    player.client = client // <- player is dependent on client's package so this should be fine
-    pool.Register <- player
-    player.client.Read();
-
-    Now how does pool fit in in the package heirarchy?
-    same package as client
-
-    */
-
-    pool.Register <- client    
-    client.Read()
+	log.Println("http server started on :8085")
+	err := http.ListenAndServe(":8085", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 
-func setupRoutes() {
+// spawned in a goroutine by http
+func handleWs(w http.ResponseWriter, r *http.Request) {
 
-	pool := game.NewPool()
+	setHeaders(w)
+	fmt.Println("handling WS")
+ 
+	// upgrade to websocket
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	go pool.Start()
+	// auth
+	account, err := authenticated(w, r)
+	if err != nil {
+		fmt.Println("Auth Error: ")
+		fmt.Println(err)
+		ws.Close()
+		return
+	}
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(pool, w, r)
-	})
-}
+	fmt.Printf("%s connected and authenticated\n", account.UUID.String())
 
-func main() {
-    fmt.Println("Ultima go-api v0.0.1")
-    setupRoutes()
-    http.ListenAndServe(":8080", nil)
+	c := model.NewClient(ws, game.In, account)
+	go c.HandleOutbound()
+	c.HandleInbound()
 }

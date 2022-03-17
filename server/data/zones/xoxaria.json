@@ -1,0 +1,110 @@
+{
+  "properties":[
+    {
+     "name":"name",
+     "type":"string",
+     "value":"Xoxaria"
+    },
+    {
+      "name":"torroidal",
+      "type":"boolean",
+      "value":true
+     }
+  ],
+  "layers":[ 
+    {
+      "name":"ground",
+      "type":"tilelayer",
+      "subtype":"imageMap",
+      "file":"xoxaria.png"
+    },
+    {
+      "name":"world_objects",
+      "objects":[
+        {
+          
+          "name":"Britain",
+          "type":"town",
+          "properties": [
+            {
+              "name":"UUID",
+              "type":"string",
+              "value":"b4f195f7-644a-4791-8177-c9eb69b10e9a"
+             },
+             {
+              "name":"Name",
+              "type":"string",
+              "value":"Britain"
+             }
+            
+            ],            
+          "x":200,
+          "y":200,
+          "width":1,
+          "height":1,
+          "visible":true
+          
+        },
+        {          
+          "name":"Trinsic",
+          "type":"town",
+          "properties": [ {
+            "name":"UUID",
+            "type":"string",
+            "value":"b4f195f7-644a-4791-8177-c9eb69b10e9b"
+           },
+           {
+            "name":"Name",
+            "type":"string",
+            "value":"Trinsic"
+           }], 
+
+          "x":100,
+          "y":230,
+          "width":1,
+          "height":1,
+          "visible":true
+        },
+        {
+          "name":"Grey",
+          "type":"town",
+          "properties": [ {
+            "name":"UUID",
+            "type":"string",
+            "value":"6f273702-68cf-4d3d-9dd5-4f9eda33dfff"
+           },
+           {
+            "name":"Name",
+            "type":"string",
+            "value":"Grey"
+           }], 
+          "x":58,
+          "y":358,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {         
+          "name":"Spawn start",
+          "properties":[
+            {
+            "name":"UUID",
+            "type":"string",
+            "value":"b4f195f7-644a-4791-8177-c9eb69b10e9e"
+            },
+            {
+              "name":"Name",
+              "type":"string",
+              "value":"Spawn start"
+             }],        
+          "type":"playerSpawn",
+          "visible":true,
+          "width":1,
+          "height":1,
+          "x":233,
+          "y":154
+        }
+      ]
+    }
+  ]  
+}
