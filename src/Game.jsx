@@ -9,7 +9,6 @@ import { UtilWidgets } from "./UtilWidgets"
 const cookies = new Cookies()
 
 function Game() {
-
   const [player, setPlayer] = useState(
     cookies.get('player') || {
       name: ''
@@ -21,25 +20,24 @@ function Game() {
   const [wind, setWind] = useState()
   const [board, setBoard] = useState([])
   const [gemPeer, setGemPeer] = useState()
-
+  
   const updatePlayer = player => {
     setPlayer(player)
     cookies.set('player',player)
   }
 
-  const resetPlayer = () => {
-    player.name = ""     
-    setPlayer({ ...player})
-    cookies.set('player',player)
-  }
-
-  const serverMessageCallback = msg=> { 
+  const serverMessageCallback = msg => { 
     if (msg.fov) { 
-      console.log('fov update', msg.fov);
+      // console.log('fov update', msg.fov);
       setBoard(msg.fov)
     }
-    else if (msg.message) setMessages([...messages, msg.message].slice(-22)) 
-    else if (msg.gemPeer) setGemPeer(msg.gemPeer)     
+    else if (msg.message) {
+     // console.log('setting messages', messages, msg.message, [...messages, msg.message].slice(-22) )   
+      setMessages([...messages, msg.message].slice(-22)) 
+    }
+    else if (msg.gemPeer) {
+      setGemPeer(msg.gemPeer)      
+    }     
     else if (msg.zone) {
       const zone = msg.zone
       if (zone.moonPhase)
@@ -60,9 +58,10 @@ function Game() {
     else console.log("Other message",msg)    
   }
   
-  // updates every time messages updates
+  // updates every time messages updates. Why? Because the messageCallback needs to be reinitialized with the serverMessageCallback having messages in the proper state
+  // otherwise the messages variable is always stuck at the state it was when it was initialized.
   useEffect(() => connect({ messageCallback: serverMessageCallback}), [messages]);
-
+  
   useEffect(() => {
     document.addEventListener("keydown", catchKeys, false) // mount
     return () => document.removeEventListener("keydown", catchKeys, false) // unmount    
@@ -80,7 +79,8 @@ function Game() {
         { play ? 
           <><UtilWidgets setPlay={setPlay} player={player} />
           <Xoxaria                                                    
-            messages={messages}                   
+            messages={messages}
+            setMessages={setMessages}                   
             board={board}
             moons={moons}
             wind={wind}           

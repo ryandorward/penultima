@@ -44,5 +44,4 @@ const AvatarTile = ({index, checked}) => {
   return (
     <div className={className} />
   )
-
 }

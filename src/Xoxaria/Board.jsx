@@ -1,23 +1,19 @@
 import React from "react";
 
-export const Board = ({board, wind, animationOn}) => {          
-  const boardClass = "board" + (wind ? ' wind-' + wind : '') + (animationOn ? ' animate':'');
+export const Board = ({board, gemPeer, wind, animationOn }) => {          
+  const boardClass = "board" + (wind ? ' wind-' + wind : '') + (animationOn ? ' animate':'') + (gemPeer ? ' gemPeer' : '' ); 
+  let displayGrid = gemPeer ? gemPeer : board 
   return (     
     <div className={boardClass}>
       {               
-        board.map((row, y) => {            
+        displayGrid.map((row, y) => {            
           return (
             <div className = "row" key={y}>
-              {
-                row.map((_, x) => {                    
-                  let tileClass = "cell tile tile-" + board[x][y]              
-                  return <div key={x} className={tileClass}></div>                
-                })
-              }
+              { row.map( (_, x) => <div key={x} className={"cell tile tile-" + displayGrid[x][y]}/> ) }             
             </div>
           )
         })
       }
     </div>
   )    
-}  
+} 

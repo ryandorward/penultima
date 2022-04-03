@@ -188,6 +188,33 @@
   background-color: #80caa0; /*rgb(94, 201, 174);*/
 }
 
+
+.board .tile-15,
+.board .tile-16,
+.board .tile-17,
+.board .tile-18 {
+  background-position: 0 0;
+  background-color: #9fbe65; /*rgb(94, 201, 174);*/
+}
+
+.board .tile-15 { /* brush */  
+  background-position: -192px 0; 
+}
+.board .tile-16 { /* brush2 */  
+  background-image: url("../images/brush-2.png");  
+}
+.board .tile-17 { /* brush3 */  
+  background-image: url("../images/brush-3.png"); 
+}
+.board .tile-18 { /* brush3 */  
+  background-image: url("../images/brush-4.png"); 
+}
+
+.board .tile-19 { /* shoreline: water to the S */  
+  background-color:#a4d093; 
+  background-position: -288px -96px;
+}
+
 @keyframes avatar1 {
   from { background-position: -384px  -320px; }
   to { background-position: -512px  -320px; } 

@@ -8,7 +8,7 @@ var socket = new WebSocket('ws://'+host+':8084/ws');
 
 let connect = ({messageCallback}) => {  
 
-  // console.log('connect',socket.readyState)
+  console.log('connect',socket.readyState)
   
   /*
   if ( socket.readyState === WebSocket.CLOSED)
@@ -28,8 +28,9 @@ let connect = ({messageCallback}) => {
     // requestMove(13)
   };
 
-  socket.onmessage = msg => {            
-    const message = JSON.parse(msg.data)        
+  socket.onmessage = msg => {        
+    const message = JSON.parse(msg.data)
+    console.log('omessage',message)        
     messageCallback(message)     
   };
 
@@ -51,8 +52,9 @@ let sendMsg = msg => {
 
 let requestMove = move => {  
   if (socket.readyState === WebSocket.CLOSING || socket.readyState === WebSocket.CLOSED) {
-    console.log('Socket is closed/closing. Cannot send move')   
-    alert("Connection to the game has closed! Adventure awaits, try reloading ↻ this page.")
+    console.log('Socket is closed/closing. Cannot send move')      
+    if(!alert("Connection to the game has stopped! Adventure awaits, try reloading ↻ this page, or click OK to reload now."))
+      window.location.reload()
   }
   socket.send(JSON.stringify({
     "move": move
@@ -72,4 +74,24 @@ let requestPeerGem = move => {
   }));
 };
 
-export { connect, sendMsg, requestMove, requestUpdateAvatar, requestPeerGem  };
+let requestMagicSpell = spell => {  
+  socket.send(JSON.stringify({
+    "castSpell": {spell: spell}
+  }));
+};
+
+let requestLook = dir => {  
+  console.log('requestLook',dir)
+  socket.send(JSON.stringify({
+    "look": dir
+  }));
+};
+
+let requestTalk = ({dir, message}) => {    
+  socket.send(JSON.stringify({
+    "talk": dir,
+    'message': message
+  }));
+};
+
+export { connect, sendMsg, requestMove, requestUpdateAvatar, requestPeerGem, requestMagicSpell, requestLook, requestTalk };
