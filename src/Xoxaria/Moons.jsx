@@ -1,5 +1,7 @@
 import React from "react";
-import '../css/moons.css';
+import { useRecoilValue } from 'recoil'
+import { moonsState } from '../atoms/atoms'
+import '../css/moons.css'
 
 const Moon = ({name, phase}) => {
   const className = "moon" + (name ? " " + name : "") + (phase ? " phase-" + phase : "")
@@ -10,7 +12,10 @@ const Moon = ({name, phase}) => {
   )
 }
 
-export const Moons = ({ moons }) => { 
+export const Moons = () => { 
+
+  const moons = useRecoilValue(moonsState)
+
   return (
     <div className = "moons-wrap">          
       <Moon name="Trammel" phase={moons.trammel}/>

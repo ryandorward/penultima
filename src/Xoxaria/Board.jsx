@@ -1,6 +1,12 @@
-import React from "react";
+import React from "react"
+import { useRecoilValue } from 'recoil'
+import { windState, boardState, gemPeerState } from '../atoms/atoms'
 
-export const Board = ({board, gemPeer, wind, animationOn }) => {          
+export const Board = ({ animationOn }) => {    
+  const wind = useRecoilValue(windState)      
+  const board = useRecoilValue(boardState) 
+  const gemPeer = useRecoilValue(gemPeerState)   
+
   const boardClass = "board" + (wind ? ' wind-' + wind : '') + (animationOn ? ' animate':'') + (gemPeer ? ' gemPeer' : '' ); 
   let displayGrid = gemPeer ? gemPeer : board 
   return (     
@@ -13,7 +19,7 @@ export const Board = ({board, gemPeer, wind, animationOn }) => {
             </div>
           )
         })
-      }
+      }     
     </div>
   )    
 } 

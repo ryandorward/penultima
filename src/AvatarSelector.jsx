@@ -1,5 +1,5 @@
 import React from "react";
-import { RadioGroup, FormControl, FormControlLabel, FormLabel, Radio } from '@material-ui/core';
+import { RadioGroup, FormControl, FormControlLabel, Radio } from '@material-ui/core';
 import { requestUpdateAvatar } from "./api";
 
 export const AvatarSelector = ({avatar,setAvatar}) => {  

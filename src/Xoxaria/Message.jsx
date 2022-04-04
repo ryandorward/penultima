@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 
-export const Message = ({message}) => {  
-    
+export const Message = ({message}) => {      
   return (  
     <div className="Message">
-      <>{">"} {message}</>
+      <>{message}</>
     </div>
   )    
-
-}
+} 
