@@ -315,7 +315,7 @@
   border: 1px solid red;
   border-radius: 6px;
   transform: translate(-50%, -50%);
-}
+} 
 .board.gemPeer .center { 
   width: 0px;
   height: 0px;

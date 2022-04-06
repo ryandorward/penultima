@@ -1,6 +1,6 @@
 import React from "react";
 import { useRecoilValue } from 'recoil'
-import { moonsState } from '../atoms/atoms'
+import { moonsState } from '../recoil/atoms'
 import '../css/moons.css'
 
 const Moon = ({name, phase}) => {

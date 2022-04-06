@@ -1,6 +1,6 @@
 import React from "react";
 import { useRecoilValue } from 'recoil'
-import { windState } from '../atoms/atoms'
+import { windState } from '../recoil/atoms'
 
 export const Wind = () => { 
   const wind = useRecoilValue(windState)

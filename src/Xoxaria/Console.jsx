@@ -1,10 +1,12 @@
 import React from "react";
 import { useRecoilValue } from 'recoil'
-import { messagesState } from '../atoms/atoms'
+import { messagesState } from '../recoil/atoms'
 import { Message } from "./Message";
 
-export const Console= () => {    
-  const messages = useRecoilValue(messagesState)    
+export const Console = () => {    
+  
+  const messages = useRecoilValue(messagesState)
+  
   return (  
     <div className="console">
       <div className='console-inner'>

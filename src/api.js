@@ -30,7 +30,7 @@ let connect = ({messageCallback}) => {
 
   socket.onmessage = msg => {        
     const message = JSON.parse(msg.data)
-    console.log('omessage',message)        
+    // console.log('omessage',message)        
     messageCallback(message)     
   };
 

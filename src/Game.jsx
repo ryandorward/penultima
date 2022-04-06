@@ -5,6 +5,8 @@ import { PlayerBuilder } from "./PlayerBuilder"
 import { Xoxaria } from "./Xoxaria/Xoxaria"
 import Cookies from 'universal-cookie'
 import { UtilWidgets } from "./UtilWidgets"
+import { ServerListener } from "./Listeners/ServerListener"
+import { ClientListener } from "./Listeners/ClientListener"
 
 const cookies = new Cookies()
 
@@ -25,11 +27,12 @@ function Game() {
     <RecoilRoot>       
       <div className="App">
         <header className="App-header" key = {player.name} >                            
-          { play ? 
-                      
+          { play ?                       
             <>
               <UtilWidgets setPlay={setPlay} player={player} />
-              <Xoxaria /> 
+              <Xoxaria />
+              <ServerListener />
+              <ClientListener />
             </>:
             <PlayerBuilder 
               player={player}

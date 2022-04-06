@@ -1,9 +1,2 @@
 import React from "react";
-
-export const Message = ({message}) => {      
-  return (  
-    <div className="Message">
-      <>{message}</>
-    </div>
-  )    
-} 
+export const Message = ({message}) => <div className="Message">{message}</div> 

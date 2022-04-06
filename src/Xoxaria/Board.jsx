@@ -1,6 +1,6 @@
 import React from "react"
 import { useRecoilValue } from 'recoil'
-import { windState, boardState, gemPeerState } from '../atoms/atoms'
+import { windState, boardState, gemPeerState } from '../recoil/atoms'
 
 export const Board = ({ animationOn }) => {    
   const wind = useRecoilValue(windState)      
@@ -19,7 +19,9 @@ export const Board = ({ animationOn }) => {
             </div>
           )
         })
-      }     
+      }  
+      <div className='center-ring'></div>
+      <div className='center'></div>   
     </div>
   )    
 } 
