@@ -36,7 +36,7 @@ func (a *PeerGemAction) Execute() bool {
 		} 
 	}
 
-	a.Peerer.GetClient().In <- network.NewServerMessageEvent("Peer Gem!")
+	a.Peerer.GetClient().In <- network.NewServerMessageEvent("> Peer at a Gem.")
 	a.Peerer.GetClient().In <- network.NewPeerGemEvent(&fov)
 	a.Peerer.GetClient().In <- network.NewServerMessageEvent("Press any key to exit.")
 	

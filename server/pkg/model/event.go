@@ -13,6 +13,9 @@ type ClientEvent struct {
 	Attack *ClientAttackEvent `json:"attack,omitempty"`
 	UpdateAvatar *ClientUpdateAvatarEvent `json:"avatar,omitempty"`
 	PeerGem *ClientPeerGemEvent `json:"peerGem,omitempty"`
+	CastSpell *ClientCastSpellEvent `json:"castSpell,omitempty"`
+	Look *ClientLookEvent `json:"look,omitempty"`
+	Talk *ClientTalkEvent `json:"talk,omitempty"`
 	Sender *Client `json:"-"`
 }
 
@@ -72,3 +75,17 @@ type ServerMessageEvent struct {
 }
 
 type ClientPeerGemEvent struct {}
+
+type ClientCastSpellEvent struct {
+	Spell string `json:"spell"`
+}
+
+type ClientLookEvent struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type ClientTalkEvent struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}

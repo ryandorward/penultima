@@ -49,7 +49,7 @@ services:
        context: ./client
        dockerfile: ./Dockerfile
      ports:
-       - "3002:3000"           
+       - "3000:3000"           
      volumes:     
        - ./client/src:/app/src
        - ./client/public:/app/public

@@ -6,7 +6,7 @@ import (
 	//"app/pkg/game/util"
 	// "errors" 
 	"math/rand"
-	"fmt"
+	// "fmt"
 	"app/pkg/game/event/network"
 
 )
@@ -91,15 +91,15 @@ func (a *MoveAction) Execute() bool {
 
 		var msg string
 		if ((a.X == 0) && (a.Y == 0)) {
-			msg = "Stationary"
+			msg = "> Pass"
 		}	else if ((a.X == -1) && (a.Y == 0)) {
-			msg = "West"
+			msg = "> West"
 		}	else if ((a.X == 0) && (a.Y == -1)) {
-			msg = "North"
+			msg = "> North"
 		}	else if ((a.X == 1) && (a.Y == 0)) {
-			msg = "East"
+			msg = "> East"
 		}	else if ((a.X == 0) && (a.Y == 1)) {
-			msg = "South"
+			msg = "> South"
 		}	
 		a.Mover.GetClient().In <- network.NewServerMessageEvent(msg)
 	} else {
@@ -116,7 +116,7 @@ func (a *MoveAction) Execute() bool {
 
 	// we should NotifyObservers to update their own view
 	event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: nX, Y: nY})
-	fmt.Printf("MoveAction: Execute: X: %d, Y: %d\n", nX, nY) 
+	// fmt.Printf("MoveAction: Execute: X: %d, Y: %d\n", nX, nY) 
 
 	return true // success
 }

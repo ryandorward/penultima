@@ -29,8 +29,7 @@ func NewClient(conn *websocket.Conn, outChan chan<- ClientEvent, account *store.
    
 	fmt.Printf("model/client/NewClient New client: %v \n", c)
 
-	// notify join
-	
+	// notify join	
 	outChan <- ClientEvent{
 		Sender: c,
 		Join: &ClientJoinEvent{

@@ -135,7 +135,7 @@ player (
 */
 
 	// generate random avatar tile
-	avatar := rand.Intn(4) + 101
+	avatar := rand.Intn(4) + 101 
 
 	// initialize row in player. Holds player's data like location, avatar, etc.
 	playerStatement, err := db.Prepare("INSERT INTO player (uuid, screenname, zone, x, y, z, avatar, stats, items, state) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)")
@@ -146,7 +146,7 @@ player (
 	if err != nil {
 		return nil, err
 	}
-	playerStatement.Close()
+	playerStatement.Close() 
 
 	return GetAccount(accountUUID)
 }

@@ -124,6 +124,26 @@ func processEvent(e model.ClientEvent) {
 			p.QueuedAction = &action.PeerGemAction{
 				Peerer: p,
 			}	
+		case e.CastSpell != nil:
+			fmt.Println("game/processEvent:cast spell ")		
+			p.QueuedAction = &action.CastSpellAction{
+				Caster: p,
+				Spell: e.CastSpell.Spell,
+			}
+		case e.Look != nil:
+			fmt.Println("game/processEvent:look ")		
+			p.QueuedAction = &action.LookAction{
+				Looker: p,
+				X:     e.Look.X,
+				Y:     e.Look.Y,
+			}
+		case e.Talk != nil:
+			fmt.Println("game/processEvent:talk ")		
+			p.QueuedAction = &action.TalkAction{
+				Actor: p,
+				X:     e.Talk.X,
+				Y:     e.Talk.Y,
+			}
 		default:
 			fmt.Println("game/processEvent: default")
 			fmt.Println(e)

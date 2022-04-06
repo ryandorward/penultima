@@ -36,11 +36,14 @@ type Zone struct {
 	// Time int `json:"time"` // time of the day, in xoxarian seconds. See: https://www.uoguide.com/Time#:~:text=Each%20day%20is%20divided%20into,from%206%20AM%20until%20midnight
 }
 
+
+
 func (z *Zone) GetUUID() uuid.UUID {
 	return z.UUID
 }
 
 var secondsPerDay = 1800 // Xoxarian day is 1800 seconds long!
+var startTime = time.Now()
 
 // @todo implement this properly - taking into account wrap around if current zone is torroidal
 func (z *Zone) GetNewLocation(x,y,dx,dy int) (int, int) {
@@ -281,12 +284,21 @@ func (z *Zone) updateWind() {
 	if windx != z.wind.x || windy != z.wind.y {
 		z.wind.x = windx
 		z.wind.y = windy
-		fmt.Println("Updating wind: ", z.wind)
+		//init the loc  
+		loc, _ := time.LoadLocation("Asia/Kuala_Lumpur")
+
+		//set timezone,  
+		now := time.Now().In(loc)
+
+		// time since start:
+		t := now.Sub(startTime)
+
+		fmt.Println("Updating wind: ", z.wind, " ", now.Format("2006-01-02 15:04:05"), " Minuts since start: ", int(t.Minutes()))
 		z.updateClientsWind()
 	}
 
 }
-
+ 
 func (z *Zone) GetSunlight() int {
 	return z.sunlight
 }
