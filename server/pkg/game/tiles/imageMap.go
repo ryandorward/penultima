@@ -1,4 +1,4 @@
-package data
+package tiles
 
 import (
 	"os"
@@ -15,7 +15,7 @@ import (
 var WorldWidth, WorldHeight int
 
 type WorldMap struct {
-	Grid [][] int8
+	Grid [][] int
 }
 
 // @todo: using pix method would be 4-10x faster, see: https://stackoverflow.com/questions/33186783/get-a-pixel-array-from-from-golang-image-image
@@ -57,7 +57,6 @@ func imageArr_to_terrain_array(imageArr [][][3]uint32 ) [][]model.Tile {
 	return out
 }
 
-
 func contextualize_tiles(tiles [][]model.Tile) [][]model.Tile {
 	
 	height := len(tiles)
@@ -76,11 +75,43 @@ func contextualize_tiles(tiles [][]model.Tile) [][]model.Tile {
 
 			tile := tiles[x][y]
 
+
+			tileN := tiles[x][util.WrapMod(y-1,width)] // assume torroidal hope it doesn't get weird
+			tileE := tiles[util.WrapMod(x+1,height)][y]
+			tileS := tiles[x][util.WrapMod(y+1,width)]
+			tileW := tiles[util.WrapMod(x-1,height)][y]
+
 			if (tile == Tiles["land"] && nbrS == Tiles["shallow_water"]) {
 				newCol[y] = tiles[x][y]
 			}	else {
 				newCol[y] = tiles[x][y]
 			}			
+
+			if (tile == Tiles["pathEW"]) {
+				// 	if (tileE == Tiles["pathEW"] && tileW == Tiles["pathEW"]) { // do nothing
+
+				pathCount := 	util.Bool2Int(tileN == Tiles["pathEW"]) + util.Bool2Int(tileE == Tiles["pathEW"]) + util.Bool2Int(tileS == Tiles["pathEW"]) + util.Bool2Int(tileW == Tiles["pathEW"])
+
+				if (pathCount > 2) { 
+					newCol[y] = Tiles["pathIntersection"]
+				} else if (tileW == Tiles["pathEW"] && tileN == Tiles["pathEW"]) { 
+					newCol[y] = Tiles["pathNW"]
+				} else if (tileW == Tiles["pathEW"] && tileS == Tiles["pathEW"]) {
+					newCol[y] = Tiles["pathSW"]
+				} else if (tileE == Tiles["pathEW"] && tileN == Tiles["pathEW"]) {
+					newCol[y] = Tiles["pathNE"]
+				} else if (tileE == Tiles["pathEW"] && tileS == Tiles["pathEW"]) {
+					newCol[y] = Tiles["pathSE"]
+				} else if (tileE == Tiles["pathEW"] && tileS == Tiles["pathEW"]) {
+					newCol[y] = Tiles["pathSE"]
+				} else if (tileN == Tiles["pathEW"] && tileS == Tiles["pathEW"]) {
+					newCol[y] = Tiles["pathNS"]
+				} else if (tileS == Tiles["pathEW"] || tileN == Tiles["pathEW"]) {				
+					newCol[y] = Tiles["pathNS"]
+				}
+
+			}
+
 		}		
 		out[x] = newCol					
 	} 
@@ -144,9 +175,21 @@ func png_pixel_to_tile( pixel[3]uint32, x, y int) model.Tile {
 				return Tiles["brush2"]; //16;
 			} else if m == 2  {
 				return Tiles["brush3"]; //17;
-			} else {
+			} else { 
 				return Tiles["brush4"]; //18;
 			}
+		case [3]uint32{43690, 21845, 0}	:
+			return Tiles["pathEW"]; // @todo generate the context-relavant path tiles
+		case [3]uint32{31097, 35980, 30069}	:
+			return Tiles["stones"];
+		case [3]uint32{21845, 21845, 21845}	:
+			return Tiles["rockWall"]; // @todo generate the context-relavant path tiles
+		case [3]uint32{43690, 43690, 43690} :
+			return Tiles["stoneWall"];	
+		case [3]uint32{43690, 0, 0}:
+			return Tiles["tileFloor"];	
+		case [3]uint32{25443, 13107, 0}:
+			return Tiles["woodFloorHoriz"];			
 		default: 
 			fmt.Println("unknown pixel: ", pixel)
 			return Tiles["nothing"];	// 0
@@ -189,7 +232,7 @@ func NewWorldMap(img_path string) ([][]model.Tile, int, int) {
 
 	for y := 0; y < 15; y++ { 
 		for x := 0; x < 2; x++ {			  		
-			fmt.Printf("y:%d Terrain: %d | ", y, terrainArr[x][y])
+			// fmt.Printf("y:%d Terrain: %d | ", y, terrainArr[x][y])
 		}
 		fmt.Printf("\n")
 	}	

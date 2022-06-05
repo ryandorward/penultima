@@ -10,8 +10,13 @@ type serverEvent struct {
 	Zone        *zoneEvent          `json:"zone,omitempty"`
 	WorldObject *worldObjectEvent   `json:"world_object,omitempty"`
 	Message     *serverMessageEvent `json:"message,omitempty"`
-	FOV				  *[][]int8          `json:"fov,omitempty"`
-	GemPeer			*[][]int8          `json:"gemPeer,omitempty"`
+	Result  		*serverResultEvent `json:"result,omitempty"`
+	FOV				  *[][]int        `json:"fov,omitempty"`
+	GemPeer			*[][]int         `json:"gemPeer,omitempty"`
+	Stats 			string					`json:"stats,omitempty"`
+	Stat 				*stat						`json:"stat,omitempty"`
+	Food 				int 						`json:"food,omitempty"`
+	Health 			int 						`json:"health,omitempty"`
 }
 
 type entityEvent struct {
@@ -28,7 +33,7 @@ type entityEvent struct {
 }
 
 // 15x15 grid of tiles
-type fovEvent [][]int8 
+type fovEvent [][]int 
 
 type entityMoveEvent struct {
 	X int `json:"x"`
@@ -70,13 +75,22 @@ type windEvent struct {
 
 type worldObjectEvent struct {
 	UUID uuid.UUID `json:"uuid"`
-
 	Spawn   model.WorldObject `json:"spawn,omitempty"`
 	Despawn bool              `json:"despawn"`
 }
 
 type serverMessageEvent struct {
 	Message string `json:"message"`
+}
+
+type serverResultEvent struct {
+	Message string `json:"message"`
+	Status string `json:"status"`
+}
+
+type stat struct {
+	Name string `json:"name"`
+	Value int `json:"value"`
 }
 
 func newUpdateEvent(e model.Entity) serverEvent {
@@ -119,13 +133,30 @@ func newMoveEvent(e model.Entity, x, y int) serverEvent {
 	}
 }
 
-func NewUpdateOwnViewEvent(fov *[][]int8) serverEvent {
+func NewUpdateOwnViewEvent(fov *[][]int) serverEvent {
 	return serverEvent{
 		FOV: fov,
 	}
 }
 
-func NewPeerGemEvent(fov *[][]int8) serverEvent {
+//"stats" is just the players name for now
+func NewUpdateStatsEvent(stats string) serverEvent {
+	return serverEvent{ 
+		Stats: stats,
+	}
+}
+
+// Update a single value of any one stat: food, health, gold, silver, etc. Integer value
+func NewStatEvent(name string, value int) serverEvent {
+	return serverEvent{ 
+		Stat: &stat{
+			Name: name,
+			Value: value,
+		},
+	}
+}
+
+func NewPeerGemEvent(fov *[][]int) serverEvent {
 	return serverEvent{
 		GemPeer: fov,
 	}
@@ -195,6 +226,15 @@ func NewServerMessageEvent(message string) serverEvent {
 	}
 }
 
+func NewServerResultEvent(moveResultMessage string, resultCode string) serverEvent {
+	return serverEvent{
+		Result: &serverResultEvent{
+			Message: moveResultMessage,
+			Status: resultCode, 
+		},
+	}
+}
+
 func NewMoonPhaseEvent(trammel, felucca int) serverEvent {
 	return serverEvent{
 		Zone: &zoneEvent{
@@ -216,3 +256,16 @@ func NewWindEvent(x,y int) serverEvent {
 		},
 	}
 }
+
+func NewFoodEvent(food int) serverEvent {
+	return serverEvent{ 
+		Food: food,
+	}
+}
+
+func NewHealthEvent(health int) serverEvent {
+	return serverEvent{ 
+		Health: health,
+	}
+}
+

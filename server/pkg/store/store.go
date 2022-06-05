@@ -46,7 +46,8 @@ type EntityStore struct {
 	Type string
 	X int
 	Y int
-	Avatar int8	
+	Avatar int
+	ZoneName string
 }
 
 
@@ -142,7 +143,7 @@ player (
 	if err != nil {
 		return nil, err
 	}
-	_, err = playerStatement.Exec(accountUUID.String(),"", "", 233, 154, 0, int8(avatar), "{}", "{}", "{}")
+	_, err = playerStatement.Exec(accountUUID.String(),"", "", 233, 154, 0, avatar, "{}", "{}", "{}")
 	if err != nil {
 		return nil, err
 	}
@@ -236,12 +237,15 @@ func GetStoredEntityData(accountUUID uuid.UUID) (*EntityStore, error) {
 		return nil, err
 	}
 
+	fmt.Println("Getting stored entity data. zone is " + zone)
+
 	e := &EntityStore{
 		UUID: parsedUUID,
-		Name: screenname,
-		Avatar: int8(avatar),
+		Name: screenname, 
+		Avatar: avatar,
 		X: x,
 		Y: y,
+		ZoneName: zone,
 	}
 
 	return e, nil
@@ -285,12 +289,25 @@ func SetStoredEntityData(es EntityStore) (error) {
 	return nil
 }	
 
-func SetStoredAvatar(avatar int8, uuid uuid.UUID) (error) {	
+func SetStoredAvatar(avatar int, uuid uuid.UUID) (error) {	
 	statement, err := db.Prepare("UPDATE player SET avatar = $2 WHERE uuid = $1")
 	if err != nil {
 		return err
 	}
 	_, err = statement.Exec(uuid, avatar)
+	if err != nil {
+		return err
+	}
+	statement.Close()	
+	return nil
+}	
+
+func SetStoredName(name string, uuid uuid.UUID) (error) {	
+	statement, err := db.Prepare("UPDATE player SET screenname = $2 WHERE uuid = $1")
+	if err != nil {
+		return err
+	}
+	_, err = statement.Exec(uuid, name)
 	if err != nil {
 		return err
 	}
@@ -304,6 +321,20 @@ func SetStoredLocation(x int, y int, uuid uuid.UUID) (error) {
 		return err
 	}
 	_, err = statement.Exec(uuid, x, y)
+	if err != nil {
+		return err
+	}
+	statement.Close()	
+	return nil
+}	
+
+func SetStoredZone(zone string, uuid uuid.UUID) (error) {	
+	fmt.Println("Storing player in zone: " + zone)
+	statement, err := db.Prepare("UPDATE player SET zone = $2 WHERE uuid = $1")
+	if err != nil {
+		return err
+	}
+	_, err = statement.Exec(uuid, zone)
 	if err != nil {
 		return err
 	}

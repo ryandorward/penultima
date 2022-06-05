@@ -1,0 +1,81 @@
+{
+  "properties":[
+    {
+     "name":"name",
+     "type":"string",
+     "value":"Trinsic"
+    },
+    {
+      "name":"torroidal",
+      "type":"boolean",
+      "value":false
+    },
+    {
+      "name":"UUID",
+      "type":"string",   
+      "value":"b4f195f7-644a-4791-8177-000000000001"
+    }
+  ],
+  "type":"town",
+  "parentZoneName":"Xoxaria",
+  "layers":[ 
+    {
+      "name":"ground",
+      "type":"tilelayer",
+      "subtype":"imageMap",
+      "file":"trinsic.png"
+    },
+    {
+      "name":"world_objects",
+      "objects":[
+        {          
+          "name":"Test",                        
+          "tileName":"stones",         
+          "x":2,
+          "y":2,       
+          "width":1,
+          "height":1,  
+          "visible":true          
+        },
+        {                                        
+          "tileName":"stoneWallSecretDoor",         
+          "x":40,
+          "y":43,       
+          "width":1,
+          "height":1,  
+          "visible":true          
+        }
+
+               
+      ]
+    }
+  ] , 
+  "npcs":[ 
+    {
+      "name":"Trinsic Guard",
+      "type":"npc",
+      "tileName":"guard",
+      "x":10,
+      "y":32,
+      "movement" : {
+        "algorithm":"easyWalker",
+        "speedMod": 23,
+        "jitter": 8, 
+        "directionChangeProbability": 10 
+      }
+    }, 
+    {
+      "name":"Trinsic Guard 2",
+      "type":"npc",
+      "tileName":"guard",
+      "x":7,  
+      "y":32,
+      "movement" : {
+        "algorithm":"easyWalker",
+        "speedMod": 20,
+        "directionChangeProbability": 30,
+        "jitter": 2
+      }
+    }
+  ]
+}

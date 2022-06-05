@@ -9,8 +9,14 @@
       "name":"torroidal",
       "type":"boolean",
       "value":true
-     }
+    },
+    {
+      "name":"UUID",
+      "type":"string",   
+      "value":"b4f195f7-644a-4791-8177-000000000000"
+    }
   ],
+  "growsFood":true,
   "layers":[ 
     {
       "name":"ground",
@@ -20,70 +26,215 @@
     },
     {
       "name":"world_objects",
-      "objects":[
-        {
-          
-          "name":"Britain",
-          "type":"town",
-          "properties": [
-            {
-              "name":"UUID",
-              "type":"string",
-              "value":"b4f195f7-644a-4791-8177-c9eb69b10e9a"
-             },
-             {
-              "name":"Name",
-              "type":"string",
-              "value":"Britain"
-             }
-            
-            ],            
+      "objects":[ 
+        {          
+          "name":"Food",          
+          "type":"food",            
+          "tileName":"cookedChicken",         
+          "x":5,
+          "y":5,
+          "width":1,
+          "height":1,
+          "visible":true          
+        },
+        {          
+          "name":"Food",          
+          "type":"food",            
+          "tileName":"cookedChicken",         
+          "x":7,
+          "y":5,
+          "width":1,
+          "height":1,
+          "visible":true          
+        },
+        {          
+          "name":"Gems",          
+          "type":"gem",            
+          "tileName":"gem",      
+          "x":6,
+          "y":6,
+          "width":1,
+          "height":1,
+          "visible":true          
+        },
+        {          
+          "name":"Britain",          
+          "type":"town",            
+          "tileName":"town",         
           "x":200,
           "y":200,
           "width":1,
           "height":1,
-          "visible":true
-          
+          "visible":true          
         },
         {          
-          "name":"Trinsic",
-          "type":"town",
-          "properties": [ {
-            "name":"UUID",
-            "type":"string",
-            "value":"b4f195f7-644a-4791-8177-c9eb69b10e9b"
-           },
-           {
-            "name":"Name",
-            "type":"string",
-            "value":"Trinsic"
-           }], 
-
-          "x":100,
-          "y":230,
+          "name":"Trinsic", 
+          "type":"town",                    
+          "tileName":"town",
+          "x":8,
+          "y":8,
           "width":1,
-          "height":1,
-          "visible":true
+          "height":1, 
+          "visible":true,       
+          "warpTarget": {
+            "name": "trinsic",               
+            "x": 0,
+            "y": 32
+          }
         },
         {
           "name":"Grey",
-          "type":"town",
-          "properties": [ {
-            "name":"UUID",
-            "type":"string",
-            "value":"6f273702-68cf-4d3d-9dd5-4f9eda33dfff"
-           },
-           {
-            "name":"Name",
-            "type":"string",
-            "value":"Grey"
-           }], 
-          "x":58,
+          "type":"castle",          
+          "tileName":"castle",
+          "x":54,
           "y":358,
           "width":1,
           "height":1,
           "visible":true         
         },
+        {
+          "name":"Cave 1",
+          "type":"cave",          
+          "tileName":"cave",
+          "x":93,
+          "y":226,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+
+        {
+          "name":"hut",
+          "type":"hut",          
+          "tileName":"hut",
+          "x":55,
+          "y":358,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"village",
+          "type":"village",          
+          "tileName":"village",
+          "x":55,
+          "y":359,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"tower",
+          "type":"tower",          
+          "tileName":"tower",
+          "x":55,
+          "y":360,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"temple",
+          "type":"temple",          
+          "tileName":"temple",
+          "x":55,
+          "y":361,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"shrine",
+          "type":"shrine",          
+          "tileName":"shrine",
+          "x":55,
+          "y":362,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"broken shrine",
+          "type":"broken-shrine",          
+          "tileName":"broken-shrine",
+          "x":55,
+          "y":363,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+       
+        {
+          "name":"lighthouse",
+          "type":"lighthouse",          
+          "tileName":"lighthouse",
+          "x":56,
+          "y":358,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"blocked-cave",
+          "type":"blocked-cave",          
+          "tileName":"blocked-cave",
+          "x":56,
+          "y":359,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"mine",
+          "type":"mine",          
+          "tileName":"mine",
+          "x":56,
+          "y":360,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"dungeon",
+          "type":"dungeon",          
+          "tileName":"dungeon",
+          "x":56,
+          "y":361,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"",
+          "type":"",          
+          "tileName":"",
+          "x":56,
+          "y":362,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"",
+          "type":"",          
+          "tileName":"",
+          "x":56,
+          "y":363,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+        {
+          "name":"",
+          "type":"",          
+          "tileName":"",
+          "x":56,
+          "y":364,
+          "width":1,
+          "height":1,
+          "visible":true         
+        },
+
         {         
           "name":"Spawn start",
           "properties":[
@@ -97,14 +248,39 @@
               "type":"string",
               "value":"Spawn start"
              }],        
-          "type":"playerSpawn",
+          "type":"playerSpawn",          
           "visible":true,
           "width":1,
           "height":1,
-          "x":233,
-          "y":154
+          "x":102,
+          "y":232
         }
       ]
     }
-  ]  
+  ],
+  "npcs":[ 
+    {
+      "name":"Jake the snake",
+      "type":"npc",
+      "tileName":"snake",
+      "x":6, 
+      "y":6,
+      "movement" : {
+        "algorithm":"drunken",
+        "speedMod": 10
+      }
+    },
+    {
+      "name":"Zardox the wanderer",
+      "type":"npc",
+      "tileName":"minstrel",
+      "x":7, 
+      "y":6,
+      "movement" : {
+        "algorithm":"easyWalker",
+        "speedMod": 10,
+        "directionChangeProbability": 10 
+      }
+    }
+  ]
 }

@@ -36,7 +36,7 @@ type UpdateOwnViewEvent struct {
 
 type UpdateAvatarEvent struct { 
 	Entity model.Entity
-	id		 int8
+	id		 int
 }
 
 type ServerMessageEvent struct {

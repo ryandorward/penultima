@@ -11,22 +11,22 @@ import (
 	"app/pkg/game/model"
 	"app/pkg/game/zone"
 	"github.com/google/uuid"
+	"app/pkg/game/tiles"
+	"app/pkg/game/entity"
 
 )
 
-/* 
-
-@todo: change so that Laers.Data is shaped like 2-d tile map, as in old imageMap
-
-*/
 type rawTiledMap struct {
 	Width      int `json:"width"`
 	Height     int `json:"height"`
-	Properties []struct {
+	Type string `json:"type"`
+	ParentZoneName string `json:"parentZoneName"`
+	Properties []struct { 
 		Name  string          `json:"name"`
 		Type  string          `json:"type"`
 		Value json.RawMessage `json:"value"`
 	} `json:"properties"`
+	GrowsFood bool `json:"growsFood"`
 	Layers []struct {
 		ID      int    `json:"id"`
 		Width   int    `json:"width"`
@@ -48,6 +48,16 @@ type rawTiledMap struct {
 			Height     int    `json:"height"`
 			Type       string `json:"type"`
 			TileID     int    `json:"gid"`
+			Tile     string    `json:"tileName"`
+			LightRadius int		`json:"lightRadius"`
+			WarpTargetName string `json:"warpTargetName"`
+			WarpTargetX int `json:"warpTargetX"`
+			WarpTargetY int `json:"warpTargetY"`
+			WarpTarget struct {
+				Name string `json:"name"`
+				X    int    `json:"x"`
+				Y    int    `json:"y"`
+			}
 			Properties []struct {
 				Name  string          `json:"name"`
 				Type  string          `json:"type"`
@@ -55,7 +65,9 @@ type rawTiledMap struct {
 			} `json:"properties"`
 		} `json:"objects"`
 	} `json:"layers"`
+	NPCs []model.NPCProperties `json:"npcs"`
 }
+
 
 func LoadZones() map[string]*zone.Zone {
 	zones := map[string]*zone.Zone{}
@@ -72,8 +84,7 @@ func LoadZones() map[string]*zone.Zone {
 			// zoneUUID := uuid.MustParse(name)
 			zoneName := name
 			zones[zoneName] = loadTiledMap(zoneName) // = loadTiledMap(zoneUUID)
-		}
-		
+		}		
 	}
 
 	for _, z := range zones {
@@ -81,6 +92,16 @@ func LoadZones() map[string]*zone.Zone {
 			if obj.WarpTarget != nil {
 				obj.WarpTarget.Zone = zones[obj.WarpTarget.ZoneName] // tie warp targets to zones via names
 			}
+		}
+
+		// tie zones that are nested to their parent (e.g. towns)
+		if (z.ParentZoneName != "") {
+			for _, oz := range zones {
+				if oz.Name == z.ParentZoneName {
+					z.ParentZone = oz			
+					// find x,y coords of this zone in parent zone
+				}
+			}		
 		}
 	}
 
@@ -124,11 +145,13 @@ func loadTiledMap(mapName string) *zone.Zone {
 		Width:  mapData.Width,
 		Height: mapData.Height,
 		Tiles:  [][]model.Tile{},
-
+		Type: mapData.Type,
+		ParentZoneName: mapData.ParentZoneName,
 		Torroidal: false,
-
 		Entities:     map[string]model.Entity{},
-		WorldObjects: map[string]*model.WorldObject{},
+		WorldObjects: map[uuid.UUID]*model.WorldObject{},
+		NPCs:     map[string]model.Entity{},
+		GrowsFood: mapData.GrowsFood,
 	} 
 
 	for _, property := range mapData.Properties {
@@ -149,8 +172,8 @@ func loadTiledMap(mapName string) *zone.Zone {
 	for _, layer := range mapData.Layers {
 		if layer.Name == "ground" {
 			if layer.Type == "tilelayer" && layer.Subtype == "imageMap"{				
-				z.Tiles, z.Width, z.Height = NewWorldMap("./data/zones/" + layer.File) 
-			} else { // tile map is embedded in file @todo 
+				z.Tiles, z.Width, z.Height = tiles.NewWorldMap("./data/zones/" + layer.File) 
+			} else { // tile map is embedded in file @todo nah don't bother
 				/*
 				for _, tileID := range layer.Data { 
 					z.Tiles = append(z.Tiles, Tiles[tileID-1]) // -1 because of air tile (TODO: add air tile to -1 or something)
@@ -160,19 +183,17 @@ func loadTiledMap(mapName string) *zone.Zone {
 		}
 		if layer.Name == "world_objects" { 
 			for _, obj := range layer.Objects {
-				var UUID uuid.UUID // try to get rid of UUID
-				var Name string
-
-				var hasWarpTarget, hasFullHeal bool
-				var warpTargetName string
-				var warpTargetX, warpTargetY int
-
-				fmt.Println(obj.Name)
-
-				for _, prop := range obj.Properties {			
-					
-					// fmt.Println("Prop name:", prop.Name)
 				
+				var Name string
+				UUID := uuid.New()
+
+				// var hasWarpTarget bool
+				var hasFullHeal bool
+				// var warpTargetName string
+				// var warpTargetX, warpTargetY int
+			
+				for _, prop := range obj.Properties {			
+													
 					if prop.Name == "Name" {						
 						err := json.Unmarshal(prop.Value, &Name)
 						if err != nil {
@@ -180,25 +201,29 @@ func loadTiledMap(mapName string) *zone.Zone {
 						}
 					}
 				
-					if prop.Name == "warpTargetName" {
-						hasWarpTarget = true
+					/*
+					if prop.Name == "WarpTargetName" {
+					// 	hasWarpTarget = true
+						fmt.Println("has warp target")
 						err := json.Unmarshal(prop.Value, &warpTargetName)
 						if err != nil {
 							log.Fatal(err)
 						}
 					}
-					if prop.Name == "warpTargetX" {
+				
+					if prop.Name == "WarpTargetX" {
 						err := json.Unmarshal(prop.Value, &warpTargetX)
 						if err != nil {
 							log.Fatal(err)
 						}
 					}
-					if prop.Name == "warpTargetY" {
+					if prop.Name == "WarpTargetY" {
 						err := json.Unmarshal(prop.Value, &warpTargetY)
 						if err != nil {
 							log.Fatal(err)
 						}
 					}
+					*/
 					if prop.Name == "fullHeal" {
 						err := json.Unmarshal(prop.Value, &hasFullHeal)
 						if err != nil {
@@ -206,31 +231,54 @@ func loadTiledMap(mapName string) *zone.Zone {
 						}
 					}
 				}
-
-				// fmt.Println("Name:", Name)
-
-				z.WorldObjects[Name] = &model.WorldObject{
+							
+				//	z.WorldObjects[Name] = &model.WorldObject{
+				z.WorldObjects[UUID] = &model.WorldObject{
 					UUID: UUID,
 					Name: obj.Name,
-					Tile: obj.TileID - 1,
-					X:    obj.X / obj.Width,
-					Y:    (obj.Y / obj.Height) - 1, // minus 1 because tiled objects start at the bottom left, tiles are top level (why the hell)
+					// Tile: obj.TileID - 1,
+					Tile: obj.Tile,
+					X:    obj.X,
+					Y:    obj.Y,
 					Type: model.WorldObjectType(obj.Type),
+					LightRadius: obj.LightRadius,
 				}
-				if hasWarpTarget {
-					z.WorldObjects[Name].WarpTarget = &model.WarpTarget{
-						ZoneName: warpTargetName,
-						X:        warpTargetX,
-						Y:        warpTargetY,
-					}
+			
+				if (obj.WarpTarget.Name != "") {													
+					z.WorldObjects[UUID].WarpTarget = &model.WarpTarget{
+						ZoneName: obj.WarpTarget.Name,
+						X:        obj.WarpTarget.X,
+						Y:        obj.WarpTarget.Y,
+					}											
 				}
+			
 				if hasFullHeal {
-					z.WorldObjects[Name].HealZone = &model.HealZone{
+					z.WorldObjects[UUID].HealZone = &model.HealZone{
 						Full: true,
 					}
 				}
 			}
 		}
+	}
+
+	
+	for _, npc := range mapData.NPCs {
+
+		n := entity.NewNPC()
+
+
+		/*
+		n.SetName(npc.Name)
+		n.SetPosition(npc.X, npc.Y)
+		n.SetTile(tiles.Tiles[npc.Tile].ID)	
+		*/
+		n.SetProperties(npc)
+
+		//	n.SetType(npc.Type)
+		fmt.Println(npc.Name)
+		z.Entities[npc.Name] = n
+		z.AddEntity(n)
+
 	}
 
 	// TODO: worldObjects (either create from props, or object layer)

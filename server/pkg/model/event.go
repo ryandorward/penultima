@@ -12,10 +12,12 @@ type ClientEvent struct {
 	Move   *ClientMoveEvent   `json:"move,omitempty"`
 	Attack *ClientAttackEvent `json:"attack,omitempty"`
 	UpdateAvatar *ClientUpdateAvatarEvent `json:"avatar,omitempty"`
+	UpdateName *ClientUpdateNameEvent `json:"updateName,omitempty"`
 	PeerGem *ClientPeerGemEvent `json:"peerGem,omitempty"`
 	CastSpell *ClientCastSpellEvent `json:"castSpell,omitempty"`
 	Look *ClientLookEvent `json:"look,omitempty"`
 	Talk *ClientTalkEvent `json:"talk,omitempty"`
+	SimpleAction *ClientSimpleActionEvent `json:"simpleAction,omitempty"`
 	Sender *Client `json:"-"`
 }
 
@@ -42,6 +44,10 @@ type ClientMoveEvent struct {
 
 type ClientUpdateAvatarEvent struct {
 	ID int `json:"id"`
+}
+
+type ClientUpdateNameEvent struct {
+	Name string `json:"name"`
 }
 
 type ClientViewUpdateEvent struct {
@@ -88,4 +94,9 @@ type ClientLookEvent struct {
 type ClientTalkEvent struct {
 	X int `json:"x"`
 	Y int `json:"y"`
+	Message string `json:"message"`
+}
+
+type ClientSimpleActionEvent struct {
+	Action string `json:"action"`
 }

@@ -10,7 +10,7 @@ type UpdateAvatarAction struct {
 }
 
 func (a *UpdateAvatarAction) Execute() bool {
-	a.Mover.SetTile(int8(a.Id))
+	a.Mover.SetTile(int(a.Id))
 	eX, eY := a.Mover.GetPosition()
 	event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: eX, Y: eY})
 	return true

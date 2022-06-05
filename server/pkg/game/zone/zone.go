@@ -7,6 +7,7 @@ import (
 	"time"
 	"app/pkg/game/event/network"
 	"math/rand"
+	// "app/pkg/game/util"
 )
 
 type Zone struct {
@@ -17,14 +18,16 @@ type Zone struct {
 	Tiles  [][]model.Tile `json:"tiles"`
 
 	Entities     map[string]model.Entity       `json:"entities"`
-	WorldObjects map[string]*model.WorldObject `json:"world_objects"`
+	WorldObjects map[uuid.UUID]*model.WorldObject `json:"world_objects"`
+	NPCs map[string]model.Entity `json:"npcs"`
 
 	Torroidal bool `json:"torroidal"`
+	Type string `json:"type"`
+	ParentZoneName string `json:"parent_zone_name"`
+	ParentZone *Zone `json:"parent_zone"`
 
 	// Time int `json:"time"` // 360 ticks per day
-
 	sunlight int `json:"sunlight"`	// int 1-15
-
 	trammelPhase int `json:"trammel_phase"`
 	feluccaPhase int `json:"felucca_phase"`
 
@@ -32,14 +35,18 @@ type Zone struct {
 		x int
 		y int
 	}
+
+	GrowsFood bool `json:"grows_food"`
 			
 	// Time int `json:"time"` // time of the day, in xoxarian seconds. See: https://www.uoguide.com/Time#:~:text=Each%20day%20is%20divided%20into,from%206%20AM%20until%20midnight
 }
 
-
-
 func (z *Zone) GetUUID() uuid.UUID {
 	return z.UUID
+}
+
+func (z *Zone) GetName() string {
+	return z.Name
 }
 
 var secondsPerDay = 1800 // Xoxarian day is 1800 seconds long!
@@ -65,8 +72,15 @@ func (z *Zone) GetNewLocation(x,y,dx,dy int) (int, int) {
 			ny = 0
 		}		
 	} else {
-		if nx < 0 || ny < 0 || nx >= z.Width || ny >= z.Height {
-			return x, y
+		if nx < 0 || ny < 0 || nx >= z.Width || ny >= z.Height {		
+			if (z.Type == "town") {			
+				fmt.Println("hit edge of town, if player leaving for " + z.ParentZone.Name)				
+				// @todo: transport to new zone, set location at this nested zone's location
+				return -1,-1 // this implies an "exit" from zone
+			} else {		
+				fmt.Println(z.Type + " is not a town")	
+				return x, y
+			}			
 		}
 	}
 	return nx, ny
@@ -78,12 +92,9 @@ func (z *Zone) GetDimensions() (int, int) {
 
 func (z *Zone) GetTile(x, y int) *model.Tile {
 	if x < 0 || y < 0 || x >= z.Width || y >= z.Height {
-		return nil
+		return &model.Tile{}
 	}
-
-	// index := (z.Width * y) + x
 	return &z.Tiles[x][y]
-	// return &z.Tiles[index]
 }
 
 func (z *Zone) GetEntities() (entities []model.Entity) {
@@ -103,8 +114,7 @@ func (z *Zone) GetWorldObjects(x, y int) []*model.WorldObject {
 	return objs
 }
 
-func (z *Zone) GetAllWorldObjects() []*model.WorldObject {
-
+func (z *Zone) GetAllWorldObjects() []*model.WorldObject {	
 	objs := []*model.WorldObject{}
 	for _, obj := range z.WorldObjects {
 		objs = append(objs, obj)
@@ -112,20 +122,30 @@ func (z *Zone) GetAllWorldObjects() []*model.WorldObject {
 	return objs
 }
 
-func (z *Zone) AddEntity(e model.Entity) {
-	z.Entities[e.GetName()] = e
-	e.SetZone(z)
+func (z *Zone) RemoveWorldObjectByUUID(UUID uuid.UUID) {
+	// fmt.Println(z.WorldObjects)
+	delete(z.WorldObjects, UUID)
 }
 
+func (z *Zone) RemoveWorldObject(obj *model.WorldObject) {
+	// fmt.Println(z.WorldObjects)
+	delete(z.WorldObjects, obj.UUID)
+}
+
+func (z *Zone) AddEntity(e model.Entity) {
+	fmt.Println(z.GetName() + ": Adding: " + e.GetName())	
+	z.Entities[e.GetName()] = e	
+	e.SetZone(z) 
+}
+ 
 func (z *Zone) RemoveEntity(e model.Entity) {
+	fmt.Println(z.GetName() + ": Removing: " + e.GetName())	
 	delete(z.Entities, e.GetName())
 }
 
 func (z *Zone) Update(dt float64) {
-
 	actions := []model.Action{}
-	for _, e := range z.Entities {
-		// 	fmt.Println("update entity: ", e.GetName())
+	for _, e := range z.Entities {		 
 		if e.Tick() {
 			a := e.Act()
 			if a != nil {
@@ -133,7 +153,6 @@ func (z *Zone) Update(dt float64) {
 			}
 		}
 	}
-
 	for _, a := range actions {
 		a.Execute()
 	}
@@ -163,15 +182,12 @@ func (z *Zone) updateSun() {
 	} else {
 		sunlight  = int(16 - (2*(xt - secondsPerDay/2) / hourLength)) 
 	}
-	// fmt.Println("Coeffs:",secondsPerDay, hourLength)
-	// fmt.Println("Pre-clipped xoxarian sunlight: ", sunlight)
 	sunlight += 2
 	if sunlight > 10 {
 		sunlight = 10
 	} else if sunlight < 2{
 		sunlight = 2
 	}
-	// fmt.Println("Final sunlight: ", sunlight)
 	if sunlight != z.sunlight {
 		z.sunlight = sunlight
 		fmt.Println("Updating sunlight: ", sunlight)
@@ -241,7 +257,7 @@ func (z *Zone) updateClientsWind() {
 }
 
 func (z *Zone) updateWind() {
-	rand.Seed(time.Now().UnixNano())
+
 	windD := rand.Intn(8)
 	windx := z.wind.x
 	windy := z.wind.y
@@ -298,6 +314,68 @@ func (z *Zone) updateWind() {
 	}
 
 }
+
+func (z *Zone) updateFood() {
+	// iterate through world objects, find objects that are of type "food"
+	// food has a 1% chance of disappearing
+
+	cnt := 0
+	for _, obj := range z.GetAllWorldObjects() {		
+		if obj.Type == "food" {			
+			if rand.Intn(100) == 0 {
+				z.RemoveWorldObject(obj)
+			}else {
+				cnt ++
+			}
+		}
+	}
+	fmt.Println("Food count: ", cnt)
+
+	// 80% chance of spawning a new food object
+	if rand.Intn(100) < 80 {
+		// create a new food object
+		food := &model.WorldObject{		
+			UUID: uuid.New(),
+			Name: "Food",		
+			Tile: "cookedChicken",		
+			Type: "food",
+		}
+
+		// get a random location that is not occupied, and is a "land" tile
+		for {
+			x := rand.Intn(z.Width)
+			y := rand.Intn(z.Height)
+			if z.GetTile(x,y).Name == "Grass" {
+				if z.GetEntityAt(x,y) == nil {
+					food.X = x
+					food.Y = y
+					break
+				}
+			}
+		}
+
+	// 	fmt.Println("adding food", food)
+
+		// place it in the world
+		z.AddWorldObject(food)
+	}
+
+
+}
+
+func (z *Zone) AddWorldObject(obj *model.WorldObject) {
+	z.WorldObjects[obj.UUID] = obj
+}
+
+func (z *Zone) GetEntityAt(x,y int) *model.Entity {
+	for _, e := range z.GetEntities() {
+		ex, ey := e.GetPosition()
+		if ex == x && ey == y {
+			return &e
+		}
+	}
+	return nil
+}
  
 func (z *Zone) GetSunlight() int {
 	return z.sunlight
@@ -318,4 +396,15 @@ func (z *Zone) SlowUpdate() {
 	z.updateTrammelPhase()
 	z.updateFeluccaPhase()
 	z.updateWind()
+	if z.GrowsFood {
+		z.updateFood()
+	}
+}
+
+func (z *Zone) GetParentZone() model.Zone {
+	return z.ParentZone
+}
+
+func (z *Zone) GetTorroidal() bool {	
+	return z.Torroidal
 }

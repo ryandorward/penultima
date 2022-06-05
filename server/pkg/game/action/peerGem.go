@@ -16,28 +16,43 @@ const peerGemHeight = 160
 
 func (a *PeerGemAction) Execute() bool {
 
+	if a.Peerer.GetGems() < 1 {
+		a.Peerer.GetClient().In <- network.NewServerResultEvent("Peer at a Gem. You don't have any!", "fail")
+	}
+
 	viewWidth := peerGemWidth
 	viewHeight := peerGemHeight																				
-	fov := make([][]int8, viewHeight) // initialize a slice of viewHeight slices		
+	fov := make([][]int, viewHeight) // initialize a slice of viewHeight slices		
 	for i:=0; i < viewWidth; i++ {					
-		fov[i] = make([]int8, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices
+		fov[i] = make([]int, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices
 	}
 																									
 	entityX, entityY := a.Peerer.GetPosition()
-	zoneWidth, zoneHeight := a.Peerer.GetZone().GetDimensions()				
+	zone := a.Peerer.GetZone()
+	zoneWidth, zoneHeight := zone.GetDimensions()				
 	halfViewWidth := viewWidth / 2
 	halfViewHeight := viewHeight / 2
 	
 	for x := 0; x < viewWidth; x++ {	
-		for y := 0; y < viewHeight; y++ {	
-			nX := util.WrapMod(entityX+x - halfViewWidth, zoneWidth)
-			nY := util.WrapMod(entityY+y - halfViewHeight, zoneHeight)										
-			fov[x][y] = int8(a.Peerer.GetZone().GetTile(nX, nY).ID)
+		for y := 0; y < viewHeight; y++ {		
+			nX := entityX+x - halfViewWidth
+			nY := entityY+y - halfViewHeight
+			if zone.GetTorroidal() {
+				nX = util.WrapMod(nX, zoneWidth)
+				nY = util.WrapMod(nY, zoneHeight)														
+			}		
+			if nX < 0 || nY < 0 || nX >= zoneWidth || nY >= zoneHeight {												
+				fov[x][y] = 0
+			} else {
+				fov[x][y] = a.Peerer.GetZone().GetTile(nX, nY).ID					
+			}
 		} 
 	}
-
-	a.Peerer.GetClient().In <- network.NewServerMessageEvent("> Peer at a Gem.")
+	
+	// a.Peerer.GetClient().In <- network.NewServerMessageEvent("> Peer at a Gem.")	
+	a.Peerer.GetClient().In <- network.NewServerResultEvent("Peer at a Gem.", "success")
 	a.Peerer.GetClient().In <- network.NewPeerGemEvent(&fov)
+	a.Peerer.AddGems(-1) // one less gem
 	a.Peerer.GetClient().In <- network.NewServerMessageEvent("Press any key to exit.")
 	
 	return true

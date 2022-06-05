@@ -17,6 +17,26 @@ Towns etc
 NPCs + monsters
 
 
+
+Food
+  make food units a property of food itself
+  when food units = 0 the world object disappears
+  getting food can only happen up to maxFood carrying capacity
+  when food goes to 0, player is starving and begins loosing health
+  food needs to go in the database
+
+Health
+  goes up over time as long as not starving, sick, poisoned etc
+  if health goes to 0, player dies
+  there is a maxHealth property
+  health needs to go in the database
+
+Needs to be a way to dematerialize and leave the game
+
+
+
+
+
 How to see dependency graph:
   sudo /Users/ryandorward/Documents/go/bin/godepgraph -novendor -s -i github.com/gorilla/websocket,github.com/google/uuid,github.com/gorilla/sessions,github.com/lib/pq,golang.org/x/crypto/bcrypt cmd/app/server.go | dot -Tpng -o godepgraph.png
 
@@ -24,3 +44,4 @@ How to remove db volume and recreate:
   docker-compose down
   docker volume rm ultima_data
   docker-compose up
+

@@ -6,29 +6,35 @@ import (
 	"app/pkg/game/util"
 	serverModel "app/pkg/model"
 	"github.com/google/uuid"
-	"app/pkg/fov"	
-	"app/pkg/game/data"
-	"app/pkg/game/event/network"
-	"app/pkg/store"
-	// "fmt" 
+	// "app/pkg/fov"	
+	// "app/pkg/game/data"
+	// "app/pkg/game/event/network"
+	"app/pkg/store"	
+	"fmt"
 )
 
 type entityData struct {
 	UUID uuid.UUID        `json:"uuid"`
 	Name string           `json:"name"`
-	Tile int8              `json:"tile"` // representing tile
+	Tile int              `json:"tile"` // representing tile
 	Type model.EntityType `json:"type"`
 
 	Stats model.Stats `json:"stats"`
 
 	X int `json:"x"`
-	Y int `json:"y"`
+	Y int `json:"y"` 
+
+	lastMoveTry struct {
+		X int `json:"X"`
+		Y int `json:"Y"`
+	} `json:"lastMoveTry"`
 
 	EnergyThreshold int `json:"-"`
-	Energy          int `json:"-"`
+	Energy          int `json:"-"` 
 
 	QueuedAction model.Action `json:"-"`
 	zone         model.Zone   `json:"-"`
+	zoneName 	 string       `json:"-"`
 
 	slowThresh float64	// diminishing threshold if player was slowed last turn
 }
@@ -41,20 +47,46 @@ func (e *entityData) GetName() string {
 	return e.Name
 }
 
+func (e *entityData) SetName(n string) { 	
+	e.Name = n
+}
+
 func (e *entityData) GetZone() model.Zone {
 	return e.zone
 }
-
+func (e *entityData) GetZoneName() string {
+	fmt.Println("GetZoneName(): ", e.zoneName)
+	return e.zoneName
+}
+ 
 func (e *entityData) SetZone(z model.Zone) {
 	e.zone = z
+}
+
+func (e *entityData) SetZoneWithTarget(z model.Zone, tx, ty int) {
+	// override this in player.go	
 }
 
 func (e *entityData) GetType() model.EntityType {
 	return e.Type
 }
 
+func (e *entityData) SetPosition(x, y int) {
+	e.X = x
+	e.Y = y	
+}
+
 func (e *entityData) GetPosition() (int, int) {
 	return e.X, e.Y
+}
+
+func (e *entityData) SetLastMoveTry(x, y int) {
+	e.lastMoveTry.X = x
+	e.lastMoveTry.Y = y	
+}
+
+func (e *entityData) GetLastMoveTry() (int, int) {
+	return e.lastMoveTry.X, e.lastMoveTry.Y
 }
 
 func (e *entityData) IsInView(other model.Entity) bool {	
@@ -72,12 +104,6 @@ func (e *entityData) IsInView(other model.Entity) bool {
 	dY := util.WrapDiff(eY,oY,zoneHeight)
 
 	return ( (dX < halfViewWidth+2) && (dY < halfViewHeight+2) ) // +2 becasuse: 1 for when something goes from on to off the screen or vice-versa, and the other 1 must be for rounding	
-}
-
-func (e *entityData) SetPosition(x, y int) {
-	e.X = x
-	e.Y = y
-	store.SetStoredLocation(x, y, e.GetUUID())
 }
 
 func (e *entityData) GetClient() *serverModel.Client {
@@ -144,12 +170,11 @@ func (e *entityData) RollDamage() int {
 	return damage 
 }
 
-func (e *entityData) SetTile(t int8) {
-	e.Tile = t
-	store.SetStoredAvatar(t, e.GetUUID())
+func (e *entityData) SetTile(t int) {
+	e.Tile = t	
 }
 
-func (e *entityData) GetTile()int8 {
+func (e *entityData) GetTile()int {
 	return e.Tile
 }
 
@@ -161,13 +186,13 @@ func (e *entityData) GetSlowThresh() float64 {
 	return e.slowThresh
 }
 
-func (e *entityData) UpdateOwnView(c *serverModel.Client) {
-	
-	// fmt.Println("game/entity/entity : updating view ", c)
-	
-	// @todo: should be able to remove newMoveEvent, won't be using it
-	// c.In <- newMoveEvent(v.Entity, v.X, v.Y)
+func (e *entityData) UpdateOwnStats() {}	
 
+func (e *entityData) UpdateClientStat(name string, value int) {}
+
+// @todo: This should be moved into player.go probs
+func (e *entityData) UpdateOwnView(c *serverModel.Client) {
+	/*
 	viewWidth := 15
 	viewHeight := 15																				
 	grid := make([][]*model.Tile, viewHeight) // initialize a slice of viewHeight slices		
@@ -176,15 +201,20 @@ func (e *entityData) UpdateOwnView(c *serverModel.Client) {
 	}
 																									
 	entityX, entityY := e.GetPosition()
-	zoneWidth, zoneHeight := e.GetZone().GetDimensions()				
+	zone := e.GetZone()
+	zoneWidth, zoneHeight := zone.GetDimensions()				
 	halfViewWidth := viewWidth / 2
 	halfViewHeight := viewHeight / 2
 	
 	for x := 0; x < viewWidth; x++ {	
 		for y := 0; y < viewHeight; y++ {	
-			nX := util.WrapMod(entityX+x - halfViewWidth, zoneWidth)
-			nY := util.WrapMod(entityY+y - halfViewHeight, zoneHeight)										
-			grid[x][y] = e.GetZone().GetTile(nX, nY)										
+			nX := entityX+x - halfViewWidth
+			nY := entityY+y - halfViewHeight							
+			if zone.GetTorroidal() {
+				nX = util.WrapMod(nX, zoneWidth)
+				nY = util.WrapMod(nY, zoneHeight)	
+			}			
+			grid[x][y] = e.GetZone().GetTile(nX, nY)												
 		} 
 	}
 
@@ -194,12 +224,12 @@ func (e *entityData) UpdateOwnView(c *serverModel.Client) {
 
 	// Calculate Field Of View
 	fovCalc := fov.New()	
-	sunlight := e.GetZone().GetSunlight()
-	fovCalc.Compute(gridmap, halfViewWidth, halfViewHeight, sunlight)
+	sunlightRange := e.GetZone().GetSunlight()
+	fovCalc.Compute(gridmap, halfViewWidth, halfViewHeight, sunlightRange)
 
-	fov := make([][]int8, viewHeight) // initialize a slice of viewHeight slices											
+	fov := make([][]int, viewHeight) // initialize a slice of viewHeight slices											
 	for i:=0; i < viewWidth; i++ {
-		fov[i] = make([]int8, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices				
+		fov[i] = make([]int, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices				
 	}
 
 	// Creat final client view with visible tiles
@@ -208,9 +238,24 @@ func (e *entityData) UpdateOwnView(c *serverModel.Client) {
 			if ! fovCalc.IsVisible(x, y) {
 				fov[x][y] = 0
 			}	else {
-				fov[x][y] = int8(grid[x][y].ID)
+				fov[x][y] = int(grid[x][y].ID)
 			}
 		} 
+	}
+
+	// add in world objects!
+	for _, obj := range e.GetZone().GetAllWorldObjects() {							
+		nX := obj.X - entityX + halfViewWidth
+		nY := obj.Y - entityY + halfViewHeight			
+		nX = util.WrapMod(nX, zoneWidth)
+		nY = util.WrapMod(nY, zoneHeight)
+
+		// crude way to make sure in range. Later we won't need to do this 
+		// because we'll actually be calculating if this entity is in view
+		// (currently just returning true for that check)
+		if nX < viewWidth && nY < viewHeight && nX >= 0 && nY >= 0 && fov[nX][nY] != 0 {																					
+			fov[nX][nY] = data.Tiles[obj.Tile].ID
+		}				
 	}
 
 	// now add the avatars of the entities in view. Other _actually_ includes self
@@ -226,14 +271,13 @@ func (e *entityData) UpdateOwnView(c *serverModel.Client) {
 		// because we'll actually be calculating if this entity is in view
 		// (currently just returning true for that check)
 		if nX < viewWidth && nY < viewHeight && nX >= 0 && nY >= 0 && fov[nX][nY] != 0 {
-			fov[nX][nY] = other.GetTile() // @todo: need to look this up from the entity later
+			fov[nX][nY] = other.GetTile()
 		}
 	}
 
-	// next calculate FOV
-
-	// c.In <- newMoveEvent(v.Entity, v.X, v.Y) // c.In handled in own goroutine, passes event to client websocket
-	c.In <- network.NewUpdateOwnViewEvent(&fov)			
+	c.In <- network.NewUpdateOwnViewEvent(&fov)		
+	*/	
+			
 }
 
 func (e *entityData) SetEntityData(eS *store.EntityStore) {
@@ -241,4 +285,16 @@ func (e *entityData) SetEntityData(eS *store.EntityStore) {
 	e.Name = eS.Name
 	e.X = eS.X
 	e.Y = eS.Y
+	e.zoneName = eS.ZoneName
+	fmt.Println("game/entity/entity : setting entity data. Zone is: ", e.zoneName)
 }
+
+func (e *entityData) ReceiveMessage(m string) string{
+	return ""
+}
+
+func (e *entityData) ReceiveResult(msg string, code string) {}
+
+func (e *entityData) AddFood(food float64) { }
+func (e *entityData) AddGems(gems int) { }
+func (e *entityData) GetGems() int { return 0 }

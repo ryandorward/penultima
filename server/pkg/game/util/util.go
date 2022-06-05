@@ -64,3 +64,11 @@ func PrettyPrint(i interface{}) {
 	s, _ := json.MarshalIndent(i, "", "\t")
 	fmt.Printf("%+v\n",string(s))
 }
+
+func Bool2Int (b bool) int {
+	if b {
+		return 1
+	} else {
+		return 0
+	}
+}

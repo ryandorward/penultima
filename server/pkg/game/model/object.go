@@ -5,11 +5,13 @@ import "github.com/google/uuid"
 type WorldObject struct {
 	UUID uuid.UUID `json:"uuid"`
 	Name string    `json:"name"`
-	Tile int       `json:"tile"` // representing tile
+	// Tile int       `json:"tile"` // representing tile
+	Tile string       `json:"tile"` // representing tile
 	X    int       `json:"x"`
 	Y    int       `json:"y"`
 
 	// special features
+	LightRadius int `json:"lightRadius"`
 	Type       WorldObjectType `json:"type"`
 	WarpTarget *WarpTarget     `json:"warp_target,omitemtpy"`
 	HealZone   *HealZone       `json:"heal_zone,omitempty"`

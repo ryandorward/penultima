@@ -12,6 +12,9 @@ type Tile struct {
 
 type Zone interface {
 	GetUUID() uuid.UUID
+
+	GetName() string
+
 	GetDimensions() (int, int)
 
 	GetTile(x, y int) *Tile
@@ -21,6 +24,10 @@ type Zone interface {
 
 	GetAllWorldObjects() []*WorldObject
 	GetWorldObjects(x, y int) []*WorldObject
+
+	// RemoveWorldObjectByKey(string) // world objects indexed by string
+	RemoveWorldObjectByUUID(uuid.UUID)
+	RemoveWorldObject(*WorldObject)
 
 	GetNewLocation(x,y,dx,dy int) (int, int)
 
@@ -32,5 +39,9 @@ type Zone interface {
 	GetTrammel() int
 	GetFelucca() int
 	GetWind() (int,int)
+
+	GetParentZone() Zone
+
+	GetTorroidal() bool
 
 }

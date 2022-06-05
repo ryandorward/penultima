@@ -6,16 +6,9 @@ import (
 	//"app/pkg/game/util"
 	// "errors" 
 	"math/rand"
-	// "fmt"
-	"app/pkg/game/event/network"
-
+	"fmt" 
+	// "app/pkg/game/event/network"
 )
-
-/*
-const (
-	maxValidMoveDist = 1
-)
-*/
 
 type MoveAction struct {
 	Mover model.Entity
@@ -24,54 +17,53 @@ type MoveAction struct {
 
 func (a *MoveAction) Execute() bool {
 	eX, eY := a.Mover.GetPosition()
-
+	
 	// Prohibit moving on diagonal, or by more than one tile, for now anyways
 	if ((a.X < -1) || (a.X > 1) || (a.Y < -1) || (a.Y > 1) || ((a.X != 0) && (a.Y != 0))) {
-		event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: eX, Y: eY}) // tell them they're stationary
-		return false
+		event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: eX, Y: eY}) // tell them they're stationary.
+		return false 
 	}
 
-	// Now get the move's translation into a location
+	// 	fmt.Println("MoveAction.Execute(): ", eX, eY, a.X, a.Y, a.Mover.GetZone().GetName())
+
+	// Now get the move's translation into a location 
 	nX, nY := a.Mover.GetZone().GetNewLocation(eX,eY,a.X,a.Y)
-	currentTile := a.Mover.GetZone().GetTile(eX, eY)
-	t := a.Mover.GetZone().GetTile(nX, nY)
+
+	// If it's -1,-1 that means it's a zone-exit. Is this too kludgey? 
+	if (nX == -1) && (nY == -1) {
+		if a.Mover.GetType() == model.EntityTypeNPC { // for now, NPCs are restricted to their zone			
+			a.Mover.ReceiveResult("", "blocked")
+			return false
+		} else {
+			parentZone := a.Mover.GetZone().GetParentZone() 
+			//a.Mover.GetClient().In <- network.NewServerMessageEvent("Exit to " + parentZone.GetName() + ".")
+			a.Mover.ReceiveMessage("Exit to " + parentZone.GetName() + ".")
+			// find child zone in parent warpObjects
+			for _, obj := range parentZone.GetAllWorldObjects() {				
+				if (	obj.WarpTarget != nil && obj.WarpTarget.ZoneName != "" && obj.WarpTarget.Zone == a.Mover.GetZone()) {
+					fmt.Println("obj.WarpTarget.ZoneName: " + obj.WarpTarget.ZoneName)	
+					a.Mover.SetZoneWithTarget(parentZone, obj.X, obj.Y)
+					return true						
+				}																						
+			}
+		}
+	}
+
+	newTile := a.Mover.GetZone().GetTile(nX, nY)
 		
-	if t == nil || t.Solid {	
+	if newTile == nil || newTile.Solid {	
 		// edge of map or or solid, don't move
-		a.Mover.GetClient().In <- network.NewServerMessageEvent("Blocked!")
-		event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: eX, Y: eY}) // tell them they're stationary
+		// a.Mover.GetClient().In <- network.NewServerMessageEvent("Blocked!")
+		a.Mover.ReceiveResult("Blocked!", "blocked")			
+		// event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: eX, Y: eY}) // tell them they're stationary
 		return false
 	} 
 
-	/*
-	if a.Mover.GetType() == model.EntityTypePlayer {
-		objs := a.Mover.GetZone().GetWorldObjects(a.X, a.Y)
-		for _, obj := range objs {
-			if obj.WarpTarget != nil {
-				event.NotifyObservers(event.DespawnEvent{Entity: a.Mover})
-				a.Mover.GetZone().RemoveEntity(a.Mover)
-				obj.WarpTarget.Zone.AddEntity(a.Mover)
-				a.Mover.SetPosition(obj.WarpTarget.X, obj.WarpTarget.Y)
-				event.NotifyObservers(event.SpawnEvent{Entity: a.Mover})
-				return true
-			}		
-			if obj.HealZone != nil {
-				if obj.HealZone.Full {
-					a.Mover.Heal(a.Mover.GetStats().MaxHP)
-					event.NotifyObservers(event.HealEvent{Entity: a.Mover, Amount: a.Mover.GetStats().MaxHP, Full: true})
-					event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: eX, Y: eY}) // tell them they're stationary
-					return true
-				}
-			}		
-		}
-	}
-	*/
-
 	for _, otherE := range a.Mover.GetZone().GetEntities() {
 		otherX, otherY := otherE.GetPosition()
-		if a.Mover != otherE && otherX == nX && otherY == nY {
-			// someone is there, block the way		
-			a.Mover.GetClient().In <- network.NewServerMessageEvent("Blocked!")
+		if a.Mover != otherE && otherX == nX && otherY == nY {		
+			a.Mover.ReceiveResult("Blocked!", "blocked")	
+			//a.Mover.GetClient().In <- network.NewServerResultEvent("Blocked!", "blocked")
 			event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: eX, Y: eY}) // tell them they're stationary
 			return false
 		}
@@ -79,32 +71,37 @@ func (a *MoveAction) Execute() bool {
 
 	rando := rand.Float64()
 	var thresh float64
-	if (a.Mover.GetSlowThresh() < 1.0) {	
+
+	lastX, lastY := a.Mover.GetLastMoveTry()
+	if (lastX == nX && lastY == nY) {
 		thresh = a.Mover.GetSlowThresh() * 1.3
 	} else {
-		thresh = currentTile.Speed
+		a.Mover.SetLastMoveTry(nX, nY)
+		thresh = newTile.Speed
 	}
 
 	if rando <= thresh {
-		a.Mover.SetSlowThresh(1.0) 
+		a.Mover.SetSlowThresh(1.0)
 		a.Mover.SetPosition(nX, nY)
-
 		var msg string
 		if ((a.X == 0) && (a.Y == 0)) {
-			msg = "> Pass"
+			msg = "Pass"
 		}	else if ((a.X == -1) && (a.Y == 0)) {
-			msg = "> West"
+			msg = "West"
 		}	else if ((a.X == 0) && (a.Y == -1)) {
-			msg = "> North"
+			msg = "North"
 		}	else if ((a.X == 1) && (a.Y == 0)) {
-			msg = "> East"
+			msg = "East"
 		}	else if ((a.X == 0) && (a.Y == 1)) {
-			msg = "> South"
-		}	
-		a.Mover.GetClient().In <- network.NewServerMessageEvent(msg)
+			msg = "South"
+		}			
+		a.Mover.ReceiveResult(msg, "success")
+		
+	//	a.Mover.GetClient().In <- network.NewServerResultEvent(msg, "success")
 	} else {
-		a.Mover.SetSlowThresh(thresh)
-		a.Mover.GetClient().In <- network.NewServerMessageEvent("Slow progress!")	
+		a.Mover.SetSlowThresh(thresh)	
+		a.Mover.ReceiveResult("Slow progress!", "slow")
+	//	a.Mover.GetClient().In <- network.NewServerResultEvent("Slow progress!", "slow")	
 	}
 
 	// now is time to calculate mover's view. 
@@ -116,18 +113,6 @@ func (a *MoveAction) Execute() bool {
 
 	// we should NotifyObservers to update their own view
 	event.NotifyObservers(event.MoveEvent{Entity: a.Mover, X: nX, Y: nY})
-	// fmt.Printf("MoveAction: Execute: X: %d, Y: %d\n", nX, nY) 
 
 	return true // success
 }
-
-/*
-// implementation of zone interface for main world will have a function like this 
-// to return new location with wrapping
-func GetNewLocation(y, x, dx, dy) (nX, nY int) {	
-	nX := util.WrapMod(X+dX, zoneWidth)
-	nY := util.WrapMod(Y+Y, zoneHeight)
-	return (nX,nY)
-}	
-
-*/

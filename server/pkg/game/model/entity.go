@@ -9,10 +9,14 @@ import (
 type Entity interface {
 	GetUUID() uuid.UUID
 	GetName() string
+	SetName(string)
+
 	GetType() EntityType
 
 	GetZone() Zone
+	GetZoneName() string
 	SetZone(Zone)
+	SetZoneWithTarget(Zone, int, int)
 
 	GetPosition() (int, int)
 	SetPosition(int, int)
@@ -33,16 +37,30 @@ type Entity interface {
 	GetClient() *model.Client
 
 	IsInView(Entity) bool
-	
-	SetTile(int8)
-	GetTile() int8
+	 
+	SetTile(int)
+	GetTile() int
 
 	SetSlowThresh(float64)
 	GetSlowThresh()float64
 
+	GetLastMoveTry() (int, int)
+	SetLastMoveTry(int, int)
+
 	UpdateOwnView(c *model.Client)
+	UpdateOwnStats()
+	UpdateClientStat(string, int)
 
 	SetEntityData(*store.EntityStore)
+
+	ReceiveMessage(string) string
+
+	ReceiveResult(string, string)
+
+	AddFood(float64)
+	AddGems(int)
+	GetGems() int
+
 }
 
 type EntityType string
@@ -50,6 +68,7 @@ type EntityType string
 const (
 	EntityTypePlayer  = "player"
 	EntityTypeMonster = "monster"
+	EntityTypeNPC = "npc"
 )
 
 type Stats struct {
@@ -67,3 +86,17 @@ type Stats struct {
 	Wisdom       int `json:"wisdom"`
 	Charisma     int `json:"charisma"`
 }
+
+type NPCProperties struct {
+	Name string `json:"name"`
+	X    int    `json:"x"`
+	Y    int    `json:"y"`
+	Type string `json:"type"`
+	Tile string `json:"tileName"`	
+	Movement struct {
+		SpeedMod int `json:"speedMod"` // speed = 1/SpeedMod
+		Jitter int `json:"jitter"` // better be less than SpeedMod or weirdness will ensue
+		Algorithm string `json:"algorithm"`
+		DirectionChangeProbability int `json:"directionChangeProbability"` // 0-100	
+	} `json:"movement"`
+}  

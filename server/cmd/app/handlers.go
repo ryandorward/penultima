@@ -7,7 +7,7 @@ import (
 )
 
 func setHeaders(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://" + os.Getenv("CLIENT_HOST") + ":3002") 
+	w.Header().Set("Access-Control-Allow-Origin", "http://" + os.Getenv("CLIENT_HOST") + ":3000") 
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 

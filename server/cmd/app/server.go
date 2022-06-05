@@ -35,7 +35,7 @@ func main() {
 	http.HandleFunc("/logout", handleLogout)
 
 	// websocket
-	http.HandleFunc("/ws", handleWs) 
+	http.HandleFunc("/ws", handleWs)  
 
 	store.Init() // connect to db
 

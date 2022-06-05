@@ -23,6 +23,7 @@ import (
 	// "github.com/google/uuid"
 	"fmt"	
 	"app/pkg/store"
+	"math/rand"
 )
 
 const tickLength = 60 // 100 // in ms 
@@ -31,16 +32,20 @@ const eventBufferSize = 256
 // var startingZoneUUID = uuid.MustParse("10f8b073-cbd7-46b7-a6e3-9cbdf68a933f")
 
 var startingZoneUUID = "xoxaria"
-
+ 
 // In ...
 var In = make(chan model.ClientEvent, eventBufferSize)
 
 var zones = map[string]*zone.Zone{}
 
+
+
 // Run ...
 func Run() {  
-
+ 
 	util.PrettyPrint("Run!")
+	// rand.Seed(time.Now().UnixNano())
+	rand.Seed(606) 
 	event.Observers = append(event.Observers, network.NewObserver())
 
 	zones = data.LoadZones()
@@ -115,15 +120,22 @@ func processEvent(e model.ClientEvent) {
 
 	switch {
 		case e.Move != nil:			
+			// fmt.Println("game/processEvent: move event: ", p.UUID, p.GetName())
 			handleMoveEvent(e,p)	
 		case e.UpdateAvatar != nil:
 			fmt.Println("game/processEvent: update avatar: ", e.UpdateAvatar.ID)
 			handleUpdateAvatar(e,p)
+		case e.UpdateName != nil:
+			fmt.Println("game/processEvent: update name: ", e.UpdateName.Name)
+			p.QueuedAction = &action.UpdateNameAction{
+				Actor: p,
+				Name: e.UpdateName.Name,
+			}	
 		case e.PeerGem != nil:
 			fmt.Println("game/processEvent: peer gem ")		
 			p.QueuedAction = &action.PeerGemAction{
 				Peerer: p,
-			}	
+			}	 
 		case e.CastSpell != nil:
 			fmt.Println("game/processEvent:cast spell ")		
 			p.QueuedAction = &action.CastSpellAction{
@@ -139,10 +151,19 @@ func processEvent(e model.ClientEvent) {
 			}
 		case e.Talk != nil:
 			fmt.Println("game/processEvent:talk ")		
+			fmt.Println(e.Talk)
 			p.QueuedAction = &action.TalkAction{
 				Actor: p,
 				X:     e.Talk.X,
 				Y:     e.Talk.Y,
+				Message: e.Talk.Message,
+			}
+		case e.SimpleAction != nil:
+			fmt.Println("game/processEvent: simpleAction... ")		
+			fmt.Println(e.SimpleAction)
+			p.QueuedAction = &action.SimpleAction{
+				Actor: p,
+				Action: e.SimpleAction.Action,			
 			}
 		default:
 			fmt.Println("game/processEvent: default")
@@ -183,28 +204,48 @@ func handleJoinEvent(e model.ClientEvent) {
 	activePlayer, ok := entity.ActivePlayers[e.Sender.Account.UUID]	
 	if ok {
 		util.PrettyPrint("player already logged in!")
+		zoneName := activePlayer.GetZoneName()
+		zone := activePlayer.GetZone()		
+		fmt.Println(zoneName)
+		fmt.Println(zone.GetName())
 		activePlayer.SetClient(e.Sender) // update player with new connection!
 		initializeJoin(e, activePlayer)
 		return	
 	}
+
+	// The rest is happening when a new player joins since server has restarted
 	util.PrettyPrint("join") 
 	p := entity.NewPlayer(e.Sender) // TODO: pull from storage	
-	// event.NotifyObservers(event.JoinEvent{Entity: p}) // don't need to do we?
-	p.Spawn(zones[startingZoneUUID]) 	
-	initializeJoin(e, p)	
-}
 
-
-func initializeJoin(e model.ClientEvent, p gamemodel.Entity) {	
-	zone := p.GetZone()
-	e.Sender.In <- network.NewMoonPhaseEvent(zone.GetTrammel(),zone.GetFelucca()) // initialize moons
-	e.Sender.In <- network.NewWindEvent(zone.GetWind()) // initialize wind
 	eS, err := store.GetStoredEntityData(p.GetUUID()) // initialize stored entity data
 	if err != nil {
 		util.PrettyPrint("error getting stored entity data")
 	} else {
 		p.SetEntityData(eS)
-	}	
+	}	 
+		
+	zoneName := p.GetZoneName()
+	if (zoneName == "") {
+		fmt.Println("player has no zone name")
+		p.Spawn(zones[startingZoneUUID])
+	} else {
+		fmt.Println("player already in zone: ", zoneName)
+		for _, z := range zones {
+			if z.Name == zoneName {
+				p.Spawn(z)
+			}
+		}
+	} 
+	initializeJoin(e, p)	
+}
+
+
+func initializeJoin(e model.ClientEvent, p gamemodel.Entity) {	
+
+	zone := p.GetZone()
+	e.Sender.In <- network.NewMoonPhaseEvent(zone.GetTrammel(),zone.GetFelucca()) // initialize moons
+	e.Sender.In <- network.NewWindEvent(zone.GetWind()) // initialize wind
+	p.UpdateOwnStats()
 	p.UpdateOwnView(e.Sender) // initialize player's view
 }
 
