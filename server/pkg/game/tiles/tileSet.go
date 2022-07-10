@@ -232,10 +232,19 @@ var Tiles = map[string]model.Tile {
 		Speed: 0.22,
 	},
 
+	"chicken": {
+		ID: 254,
+		Name: "Chicken",	
+		Solid: false,
+		Opaque: false,
+		Speed: 0.8,
+	},
+
 	// from 1000+, indexing tiles from their position in the spritesheet
 	// 1000 is the first tile in the spritesheet
 	// spritesheet is 32 tiles wide, 16 tall - 512 tiles total
 	// so reserving 1000-1512 for this indexing
+
 	"pathNS": {
 		ID: 1032,
 		Name: "Path",
@@ -339,7 +348,13 @@ var Tiles = map[string]model.Tile {
 		Opaque: true,
 		Speed: 0,
 	},
-
+	"moneyBag": {
+		ID: 1258,
+		Name: "Silver",
+		Solid: false,
+		Opaque: false,
+		Speed: 0, 
+	},
 	"gem": {
 		ID: 1264,
 		Name: "Gem",
@@ -354,6 +369,13 @@ var Tiles = map[string]model.Tile {
 		Solid: false,
 		Opaque: false,
 		Speed: 0, 
+	},
+	"deadBody": {
+		ID: 1286,
+		Name: "Dead Body",
+		Solid: false,
+		Opaque: false,
+		Speed: 0.5,
 	},
 
 	"guard": {

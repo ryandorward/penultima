@@ -39,7 +39,6 @@ var In = make(chan model.ClientEvent, eventBufferSize)
 var zones = map[string]*zone.Zone{}
 
 
-
 // Run ...
 func Run() {  
  
@@ -62,7 +61,7 @@ func Run() {
 
 	// build the dungeon!
 	/*
-	dungeonFloors := dungeon.BuildDungeon(zones[startingZoneUUID])
+	dungeonFloors := dungeon.BuildDungeon(zones[startingZoneUUID]) 
 	for _, floor := range dungeonFloors {
 		zones[floor.UUID] = floor
 	}
@@ -75,18 +74,18 @@ func Run() {
 	// maybe monster generation, etc.
 	slowTicker := time.NewTicker(5 * time.Second)
 
-	for {
+	for {	
 		select {
-		case now := <-ticker.C:
-			dt := now.Sub(lastTime).Seconds()
-			lastTime = now		
-			update(dt) // update all zones
-		case e := <-In:
-			// fmt.Println("game run loop ", e )
-			processEvent(e) 
-		case <-slowTicker.C:
-			// fmt.Println("slow tick")
-			slowUpdate() // update all zones
+			case now := <-ticker.C:
+				dt := now.Sub(lastTime).Seconds()
+				lastTime = now		
+				update(dt) // update all zones
+			case e := <-In:
+				// fmt.Println("game run loop ", e )
+				processEvent(e) 
+			case <-slowTicker.C:
+				// fmt.Println("slow tick")
+				slowUpdate() // update all zones
 		}
 	}
 }
@@ -165,6 +164,14 @@ func processEvent(e model.ClientEvent) {
 				Actor: p,
 				Action: e.SimpleAction.Action,			
 			}
+		case e.DirectionalAction != nil:
+			fmt.Println("game/processEvent: directionalAction ")		
+			p.QueuedAction = &action.DirectionalAction{
+				Actor: p,
+				Action: e.DirectionalAction.Action,		
+				X:     e.DirectionalAction.X,
+				Y:     e.DirectionalAction.Y,
+			}
 		default:
 			fmt.Println("game/processEvent: default")
 			fmt.Println(e)
@@ -210,8 +217,8 @@ func handleJoinEvent(e model.ClientEvent) {
 		fmt.Println(zone.GetName())
 		activePlayer.SetClient(e.Sender) // update player with new connection!
 		initializeJoin(e, activePlayer)
-		return	
-	}
+		return 
+	} 
 
 	// The rest is happening when a new player joins since server has restarted
 	util.PrettyPrint("join") 
@@ -246,7 +253,7 @@ func initializeJoin(e model.ClientEvent, p gamemodel.Entity) {
 	e.Sender.In <- network.NewMoonPhaseEvent(zone.GetTrammel(),zone.GetFelucca()) // initialize moons
 	e.Sender.In <- network.NewWindEvent(zone.GetWind()) // initialize wind
 	p.UpdateOwnStats()
-	p.UpdateOwnView(e.Sender) // initialize player's view
+	p.UpdateOwnView() // initialize player's view
 }
 
 /*

@@ -58,6 +58,7 @@ type rawTiledMap struct {
 				X    int    `json:"x"`
 				Y    int    `json:"y"`
 			}
+			Ordinality int `json:"ordinality"`
 			Properties []struct {
 				Name  string          `json:"name"`
 				Type  string          `json:"type"`
@@ -148,9 +149,9 @@ func loadTiledMap(mapName string) *zone.Zone {
 		Type: mapData.Type,
 		ParentZoneName: mapData.ParentZoneName,
 		Torroidal: false,
-		Entities:     map[string]model.Entity{},
+		Entities:     map[uuid.UUID]model.Entity{},
 		WorldObjects: map[uuid.UUID]*model.WorldObject{},
-		NPCs:     map[string]model.Entity{},
+		// NPCs:     map[uuid.UUID]model.Entity{},
 		GrowsFood: mapData.GrowsFood,
 	} 
 
@@ -185,7 +186,7 @@ func loadTiledMap(mapName string) *zone.Zone {
 			for _, obj := range layer.Objects {
 				
 				var Name string
-				UUID := uuid.New()
+				
 
 				// var hasWarpTarget bool
 				var hasFullHeal bool
@@ -231,32 +232,48 @@ func loadTiledMap(mapName string) *zone.Zone {
 						}
 					}
 				}
-							
-				//	z.WorldObjects[Name] = &model.WorldObject{
-				z.WorldObjects[UUID] = &model.WorldObject{
-					UUID: UUID,
-					Name: obj.Name,
-					// Tile: obj.TileID - 1,
-					Tile: obj.Tile,
-					X:    obj.X,
-					Y:    obj.Y,
-					Type: model.WorldObjectType(obj.Type),
-					LightRadius: obj.LightRadius,
+				
+				// if ordinality is not explicitly set, then there is at least 1
+				if obj.Ordinality == 0 {
+					obj.Ordinality = 1
 				}
 			
-				if (obj.WarpTarget.Name != "") {													
-					z.WorldObjects[UUID].WarpTarget = &model.WarpTarget{
-						ZoneName: obj.WarpTarget.Name,
-						X:        obj.WarpTarget.X,
-						Y:        obj.WarpTarget.Y,
-					}											
-				}
-			
-				if hasFullHeal {
-					z.WorldObjects[UUID].HealZone = &model.HealZone{
-						Full: true,
+				for i := 0; i < obj.Ordinality; i++ {
+					UUID := uuid.New()
+
+					//	z.WorldObjects[Name] = &model.WorldObject{
+					z.WorldObjects[UUID] = &model.WorldObject{
+						UUID: UUID,
+						Name: obj.Name,
+						// Tile: obj.TileID - 1,
+						Tile: obj.Tile,
+						X:    obj.X,
+						Y:    obj.Y,
+						Type: model.WorldObjectType(obj.Type),
+						LightRadius: obj.LightRadius,
 					}
+
+					// for now objects with ordinality > 1 are also always randomly placed
+					if obj.Ordinality > 1 {
+						z.PlaceObject(z.WorldObjects[UUID])
+					} 
+
+					if (obj.WarpTarget.Name != "") {													
+						z.WorldObjects[UUID].WarpTarget = &model.WarpTarget{
+							ZoneName: obj.WarpTarget.Name,
+							X:        obj.WarpTarget.X,
+							Y:        obj.WarpTarget.Y,
+						}											
+					}
+				
+					if hasFullHeal {
+						z.WorldObjects[UUID].HealZone = &model.HealZone{
+							Full: true,
+						}
+					}
+
 				}
+																					
 			}
 		}
 	}
@@ -264,20 +281,19 @@ func loadTiledMap(mapName string) *zone.Zone {
 	
 	for _, npc := range mapData.NPCs {
 
-		n := entity.NewNPC()
-
-
-		/*
-		n.SetName(npc.Name)
-		n.SetPosition(npc.X, npc.Y)
-		n.SetTile(tiles.Tiles[npc.Tile].ID)	
-		*/
-		n.SetProperties(npc)
-
-		//	n.SetType(npc.Type)
-		fmt.Println(npc.Name)
-		z.Entities[npc.Name] = n
-		z.AddEntity(n)
+		// if ordinality is not explicitly set, then there is at least 1
+		if npc.Ordinality == 0 {
+			npc.Ordinality = 1
+		}
+		
+		for i := 0; i < npc.Ordinality; i++ {
+			n := entity.NewNPC()
+			n.SetProperties(npc)					 			
+			z.AddEntity(n)
+			if npc.Ordinality > 1 {
+				z.PlaceObject(n)
+			} 
+		}
 
 	}
 

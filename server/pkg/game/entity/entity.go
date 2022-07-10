@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"app/pkg/game/event"
+	// "app/pkg/game/event"
 	"app/pkg/game/model"
 	"app/pkg/game/util"
 	serverModel "app/pkg/model"
@@ -11,6 +11,7 @@ import (
 	// "app/pkg/game/event/network"
 	"app/pkg/store"	
 	"fmt"
+	"math/rand"
 )
 
 type entityData struct {
@@ -37,7 +38,11 @@ type entityData struct {
 	zoneName 	 string       `json:"-"`
 
 	slowThresh float64	// diminishing threshold if player was slowed last turn
+
 }
+
+const viewWidth = 15
+const viewHeight = 15
  
 func (e *entityData) GetUUID() uuid.UUID {
 	return e.UUID
@@ -67,8 +72,8 @@ func (e *entityData) SetZoneWithTarget(z model.Zone, tx, ty int) {
 	// override this in player.go	
 }
 
-func (e *entityData) GetType() model.EntityType {
-	return e.Type
+func (e *entityData) GetType() string { // model.EntityType {
+	return string (e.Type)
 }
 
 func (e *entityData) SetPosition(x, y int) {
@@ -79,6 +84,9 @@ func (e *entityData) SetPosition(x, y int) {
 func (e *entityData) GetPosition() (int, int) {
 	return e.X, e.Y
 }
+
+// meaningless fn just to make it comply to Positionable interface
+func (e *entityData) SetQuantity(q int) {}
 
 func (e *entityData) SetLastMoveTry(x, y int) {
 	e.lastMoveTry.X = x
@@ -91,8 +99,8 @@ func (e *entityData) GetLastMoveTry() (int, int) {
 
 func (e *entityData) IsInView(other model.Entity) bool {	
 	
-	viewWidth := 15 	// @todo: these shouldn't be hardcoded.. 
-	viewHeight := 15	
+	//viewWidth := 15 	// @todo: these shouldn't be hardcoded.. 
+	// viewHeight := 15	
 	halfViewWidth := viewWidth / 2 
 	halfViewHeight := viewHeight / 2  
 	zoneWidth, zoneHeight := e.GetZone().GetDimensions()
@@ -115,7 +123,10 @@ func (e *entityData) Act() model.Action {
 }
 
 func (e *entityData) Tick() bool {
-	e.Energy++
+	
+	e.checkDie()
+
+	e.Energy++	
 	if e.Energy >= e.EnergyThreshold {
 		e.Energy = 0
 		return true
@@ -124,8 +135,30 @@ func (e *entityData) Tick() bool {
 }
 
 func (e *entityData) Die() {
-	event.NotifyObservers(event.DieEvent{Entity: e})
-	e.zone.RemoveEntity(e)
+
+	zone := e.GetZone()
+	
+	// now add a dead body object in that spot
+	body := &model.WorldObject{		
+		UUID: uuid.New(),
+		Name: "Dead Body",		
+		Tile: "deadBody",		
+		Type: "deadBody",
+		X: e.X,
+		Y:	e.Y,
+	}
+	if e.Type == "chicken" {
+		body.Name = "Food"
+		body.Type = "food"
+		body.Tile = "cookedChicken"		
+		body.Quantity = rand.Intn(14) + 8
+	} else {
+		fmt.Println(e.Type)
+	}
+
+	zone.AddWorldObject(body)
+	zone.RemoveEntity(e)
+	e.UpdateOwnView()
 }
 
 func (e *entityData) GetStats() model.Stats {
@@ -133,7 +166,7 @@ func (e *entityData) GetStats() model.Stats {
 }
 
 // TakeDamage returns if they would die so XP can be dished out
-func (e *entityData) TakeDamage(damage int) bool {
+func (e *entityData) TakeDamage(damage float64) bool {
 	e.Stats.HP -= damage
 	return e.Stats.HP <= 0
 }
@@ -144,16 +177,16 @@ func (e *entityData) GainExp(xp int) {
 	for e.Stats.XP >= nextLevelXP {
 		e.Stats.Level += 1
 		e.Stats.MaxHP += util.Roll{8, 1, util.Modifier(e.Stats.Constitution)}.Roll()
-		e.Stats.HP = e.Stats.MaxHP
+		e.Stats.HP = float64(e.Stats.MaxHP)
 		nextLevelXP = util.XPForLevel(e.Stats.Level)
 	}
 	e.Stats.XPToNextLevel = nextLevelXP
 }
 
-func (e *entityData) Heal(amount int) {
+func (e *entityData) Heal(amount float64) {
 	e.Stats.HP += amount
-	if e.Stats.HP > e.Stats.MaxHP {
-		e.Stats.HP = e.Stats.MaxHP
+	if e.Stats.HP > float64(e.Stats.MaxHP) {
+		e.Stats.HP = float64(e.Stats.MaxHP)
 	}
 }
 
@@ -190,102 +223,14 @@ func (e *entityData) UpdateOwnStats() {}
 
 func (e *entityData) UpdateClientStat(name string, value int) {}
 
-// @todo: This should be moved into player.go probs
-func (e *entityData) UpdateOwnView(c *serverModel.Client) {
-	/*
-	viewWidth := 15
-	viewHeight := 15																				
-	grid := make([][]*model.Tile, viewHeight) // initialize a slice of viewHeight slices		
-	for i:=0; i < viewWidth; i++ {					
-		grid[i] = make([]*model.Tile, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices
-	}
-																									
-	entityX, entityY := e.GetPosition()
-	zone := e.GetZone()
-	zoneWidth, zoneHeight := zone.GetDimensions()				
-	halfViewWidth := viewWidth / 2
-	halfViewHeight := viewHeight / 2
-	
-	for x := 0; x < viewWidth; x++ {	
-		for y := 0; y < viewHeight; y++ {	
-			nX := entityX+x - halfViewWidth
-			nY := entityY+y - halfViewHeight							
-			if zone.GetTorroidal() {
-				nX = util.WrapMod(nX, zoneWidth)
-				nY = util.WrapMod(nY, zoneHeight)	
-			}			
-			grid[x][y] = e.GetZone().GetTile(nX, nY)												
-		} 
-	}
-
-	gridmap := data.GridMap{
-		Grid: grid,
-	}
-
-	// Calculate Field Of View
-	fovCalc := fov.New()	
-	sunlightRange := e.GetZone().GetSunlight()
-	fovCalc.Compute(gridmap, halfViewWidth, halfViewHeight, sunlightRange)
-
-	fov := make([][]int, viewHeight) // initialize a slice of viewHeight slices											
-	for i:=0; i < viewWidth; i++ {
-		fov[i] = make([]int, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices				
-	}
-
-	// Creat final client view with visible tiles
-	for x :=0; x < viewWidth; x++ {	
-		for y := 0; y < viewHeight; y++ {	
-			if ! fovCalc.IsVisible(x, y) {
-				fov[x][y] = 0
-			}	else {
-				fov[x][y] = int(grid[x][y].ID)
-			}
-		} 
-	}
-
-	// add in world objects!
-	for _, obj := range e.GetZone().GetAllWorldObjects() {							
-		nX := obj.X - entityX + halfViewWidth
-		nY := obj.Y - entityY + halfViewHeight			
-		nX = util.WrapMod(nX, zoneWidth)
-		nY = util.WrapMod(nY, zoneHeight)
-
-		// crude way to make sure in range. Later we won't need to do this 
-		// because we'll actually be calculating if this entity is in view
-		// (currently just returning true for that check)
-		if nX < viewWidth && nY < viewHeight && nX >= 0 && nY >= 0 && fov[nX][nY] != 0 {																					
-			fov[nX][nY] = data.Tiles[obj.Tile].ID
-		}				
-	}
-
-	// now add the avatars of the entities in view. Other _actually_ includes self
-	//for _, other := range inView {
-	for _, other := range e.GetZone().GetEntities() {
-		otherX, otherY := other.GetPosition()
-		nX := otherX - entityX + halfViewWidth
-		nY := otherY - entityY + halfViewHeight			
-		nX = util.WrapMod(nX, zoneWidth)
-		nY = util.WrapMod(nY, zoneHeight)
-
-		// crude way to make sure in range. Later we won't need to do this 
-		// because we'll actually be calculating if this entity is in view
-		// (currently just returning true for that check)
-		if nX < viewWidth && nY < viewHeight && nX >= 0 && nY >= 0 && fov[nX][nY] != 0 {
-			fov[nX][nY] = other.GetTile()
-		}
-	}
-
-	c.In <- network.NewUpdateOwnViewEvent(&fov)		
-	*/	
-			
-}
+func (e *entityData) UpdateOwnView() {}
 
 func (e *entityData) SetEntityData(eS *store.EntityStore) {
 	e.Tile = eS.Avatar
 	e.Name = eS.Name
 	e.X = eS.X
 	e.Y = eS.Y
-	e.zoneName = eS.ZoneName
+	e.zoneName = eS.ZoneName	
 	fmt.Println("game/entity/entity : setting entity data. Zone is: ", e.zoneName)
 }
 
@@ -293,8 +238,15 @@ func (e *entityData) ReceiveMessage(m string) string{
 	return ""
 }
 
+func (e *entityData) checkDie() {
+	if e.Stats.HP <= 0 {		
+		e.Die()
+	}	
+}
+
 func (e *entityData) ReceiveResult(msg string, code string) {}
 
-func (e *entityData) AddFood(food float64) { }
-func (e *entityData) AddGems(gems int) { }
-func (e *entityData) GetGems() int { return 0 }
+func (e *entityData) AddFood(food int) int { return 0 }
+func (e *entityData) AddSilver(silver int) int { return 0}
+func (e *entityData) AddGems(gems int) int {return 0 }
+func (e *entityData) GetGemCount() int { return 0 }

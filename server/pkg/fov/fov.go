@@ -115,10 +115,39 @@ func distHeightXY(px, py, d, h, oct int) (int, int) {
 	return px + d, py + h
 }
 
+func absInt(x int) int {
+	return absDiffInt(x, 0)
+}
+
+func absDiffInt(x, y int) int {
+	if x < y {
+		 return y - x
+	}
+	return x - y
+}
+
 // distTo is simply a helper function to determine the distance between two points, for checking visibility of a tile
 // within a provided radius
 func distTo(x1, y1, x2, y2 int) int {
+
+	// Original distance calculation:
+	/* 	
 	vx := math.Pow(float64(x1-x2), 2)
 	vy := math.Pow(float64(y1-y2), 2)
 	return int(math.Sqrt(vx + vy))
+	*/
+
+	// Here's "Manhattan Distance:"
+	//return absInt(x1-x2) + absInt(y1-y2)
+
+	// Here's OG distance, but with rounding
+	vx := math.Pow(float64(x1-x2), 2)
+	vy := math.Pow(float64(y1-y2), 2)
+	return int(math.Round(math.Sqrt(vx + vy)))
+
+}
+
+// Public alias of distTo
+func DistTo(x1, y1, x2, y2 int) int {	
+	return distTo(x1, y1, x2, y2)
 }

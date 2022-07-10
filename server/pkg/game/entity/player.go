@@ -3,26 +3,22 @@ package entity
 import (
 	// "app/pkg/game/event"
 	gameModel "app/pkg/game/model"
-	serverModel "app/pkg/model"
-	// "app/pkg/game/util"
+	// serverModel "app/pkg/model"
+	
 	"app/pkg/model"	
 	"github.com/google/uuid"
 	"math"
 	// "strconv"
-// 	"app/pkg/game/util"
-		"fmt"
-// 	"database/sql"
-	// "errors"
-	// "os"
+	"fmt"
 	_ "github.com/lib/pq"
 	"app/pkg/store"
-	"app/pkg/game/event"
-	
-	"app/pkg/fov"	
+	"app/pkg/game/event"	
+	fovPackage "app/pkg/fov"	
 	// "app/pkg/game/data"
 	"app/pkg/game/util"
 	"app/pkg/game/event/network"
 	"app/pkg/game/tiles"
+//	"os"
 )
 
 const (
@@ -31,8 +27,10 @@ const (
 	slowThresh = 1.0 // need to initialize SlowThresh to 1 so that they can start out moving
 )
 
-
 var ActivePlayers = map[uuid.UUID]*Player{}
+var maxFood = 200
+var maxGems = 100
+var maxSilver = 999
 
 // player is an extension of entityData
 type Player struct {
@@ -40,8 +38,8 @@ type Player struct {
 	startingZone gameModel.Zone
 	client       *model.Client
 	food float64
-	health float64
 	gems int
+	silver int
 }
 
 func NewPlayer(client *model.Client) *Player {
@@ -52,14 +50,24 @@ func NewPlayer(client *model.Client) *Player {
 			Name: client.Account.Username,
 			Tile: warriorTileID,
 			Type: gameModel.EntityTypePlayer,
-			EnergyThreshold: playerEnergyThreshold,
+			EnergyThreshold: playerEnergyThreshold,		
 			slowThresh: slowThresh,
 		},
 		client: client,
-		food: 22,
-		health: 100,
+		food: 31,	
 		gems: 8,
+		silver: 0,
 	}
+
+	/*
+	if p.entityData.Name == "dad" {
+		p.Stats.HP = 100
+	} else {
+		// print name
+		fmt.Println("Player:", p.entityData.Name)
+	}
+	*/
+	p.Stats.HP = 100
 	ActivePlayers[p.UUID] = p
 	return p
 }
@@ -102,14 +110,35 @@ func (p *player) Despawn() {
 	p.zone.RemoveEntity(p)
 	delete(ActivePlayers, p.UUID)
 }
+*/
 
-func (p *player) Die() {
-	event.NotifyObservers(event.DieEvent{Entity: p})
-	p.zone.RemoveEntity(p)
-	p.rollStats()           // roll new stats cuz they're dead lol
-	p.Spawn(p.startingZone) // send em back to the starting zone
-	return
+func (p *Player) Die() {
+	
+	p.GetClient().In <- network.NewServerResultEvent("You died!", "death")
+	p.entityData.Die()
+
+	/*
+
+	zone := p.zone
+	
+	// now add a dead body object in that spot
+	body := &gameModel.WorldObject{		
+		UUID: uuid.New(),
+		Name: "Dead Body",		
+		Tile: "deadBody",		
+		Type: "deadBody",
+		X: p.X,
+		Y:	p.Y,
+	}
+	zone.AddWorldObject(body)
+
+	zone.RemoveEntity(p)
+	p.UpdateOwnView()
+	*/
+
 }
+
+/*
 
 func (p *player) GainExp(xp int) {
 	originalLevel := p.Stats.Level
@@ -155,20 +184,24 @@ func (p *Player) SetZoneWithTarget(z gameModel.Zone, tx, ty int) {
 }
 
 
-func (e *Player) UpdateOwnView(c *serverModel.Client) {
-	
+func (p *Player) UpdateOwnView() { // (c *serverModel.Client) {	
 	viewWidth := 15
-	viewHeight := 15																				
+	viewHeight := 15	
+	margin := 2
+	viewWidth += (margin*2)
+	viewHeight += (margin*2)
+
+	// @todo: add a margin to the viewport calculations to show off-screen lightsources											
 	grid := make([][]*gameModel.Tile, viewHeight) // initialize a slice of viewHeight slices		
 	for i:=0; i < viewWidth; i++ {					
 		grid[i] = make([]*gameModel.Tile, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices
 	}
 																									
-	entityX, entityY := e.GetPosition()
-	zone := e.GetZone()
+	entityX, entityY := p.GetPosition()
+	zone := p.GetZone()
 	zoneWidth, zoneHeight := zone.GetDimensions()				
-	halfViewWidth := viewWidth / 2
-	halfViewHeight := viewHeight / 2
+	halfViewWidth := (viewWidth / 2)
+	halfViewHeight := (viewHeight / 2)
 	
 	for x := 0; x < viewWidth; x++ {	
 		for y := 0; y < viewHeight; y++ {	
@@ -178,23 +211,51 @@ func (e *Player) UpdateOwnView(c *serverModel.Client) {
 				nX = util.WrapMod(nX, zoneWidth)
 				nY = util.WrapMod(nY, zoneHeight)	
 			}			
-			grid[x][y] = e.GetZone().GetTile(nX, nY)												
+			grid[x][y] = zone.GetTile(nX, nY)												
 		} 
 	}
 
-	gridmap := fov.MyGridMap{
+	gridmap := fovPackage.MyGridMap{
 		Grid: grid,
 	}
 
 	// Calculate Field Of View
-	fovCalc := fov.New()	
-	sunlightRange := e.GetZone().GetSunlight()
-	fovCalc.Compute(gridmap, halfViewWidth, halfViewHeight, sunlightRange)
-
+	fovCalc := fovPackage.New()	
+	fovCalc.Compute(gridmap, halfViewWidth, halfViewHeight, 11)
+	
 	fov := make([][]int, viewHeight) // initialize a slice of viewHeight slices											
 	for i:=0; i < viewWidth; i++ {
 		fov[i] = make([]int, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices				
 	}
+
+	// find light sources in world objects
+	lightMask := make([][]int, viewHeight) // initialize a slice of viewHeight slices											
+	for i:=0; i < viewWidth; i++ {
+		lightMask[i] = make([]int, viewWidth) // initialize a slice of viewWidth in in each of viewHeight slices				
+	}
+	
+	for _, obj := range zone.GetAllWorldObjects() {					
+		nX := obj.X - entityX + halfViewWidth
+		nY := obj.Y - entityY + halfViewHeight			
+		nX = util.WrapMod(nX, zoneWidth)
+		nY = util.WrapMod(nY, zoneHeight)
+		if nX < viewWidth && nY < viewHeight && nX >= 0 && nY >= 0  {		
+			if (obj.LightRadius > 0) {
+				// util.PrettyPrint(obj)
+				for x := 0; x < viewWidth; x++ {
+					for y := 0; y < viewHeight; y++ {
+						if fovCalc.IsVisible(x, y) && fovPackage.DistTo(x, y, nX, nY) <= obj.LightRadius {
+							lightMask[x][y] = 1
+						}
+					}
+				}			
+			}						
+		}				
+	}
+
+	sunlightRange := zone.GetSunlight()	
+	// sunlightRange = 3
+	fovCalc.Compute(gridmap, halfViewWidth, halfViewHeight, sunlightRange)
 
 	// new fov algo:
 	// 1. calc fov without sunlight, so full range of viewport 
@@ -211,8 +272,8 @@ func (e *Player) UpdateOwnView(c *serverModel.Client) {
 
 	// Create final client view with visible tiles
 	for x :=0; x < viewWidth; x++ {	 
-		for y := 0; y < viewHeight; y++ {	
-			if ! fovCalc.IsVisible(x, y) {
+		for y := 0; y < viewHeight; y++ {				
+			if ! fovCalc.IsVisible(x, y) && lightMask[x][y] == 0{
 				fov[x][y] = 0
 			}	else {
 				fov[x][y] = int(grid[x][y].ID)
@@ -220,8 +281,11 @@ func (e *Player) UpdateOwnView(c *serverModel.Client) {
 		} 
 	}
 
+	//util.PrettyPrint(fov)
+	// os.Exit(0)
+
 	// add in world objects!
-	for _, obj := range e.GetZone().GetAllWorldObjects() {							
+	for _, obj := range zone.GetAllWorldObjects() {							
 		nX := obj.X - entityX + halfViewWidth
 		nY := obj.Y - entityY + halfViewHeight			
 		nX = util.WrapMod(nX, zoneWidth)
@@ -237,7 +301,7 @@ func (e *Player) UpdateOwnView(c *serverModel.Client) {
 
 	// now add the avatars of the entities in view. Other _actually_ includes self
 	//for _, other := range inView {
-	for _, other := range e.GetZone().GetEntities() {
+	for _, other := range zone.GetEntities() {
 		otherX, otherY := other.GetPosition()
 		nX := otherX - entityX + halfViewWidth
 		nY := otherY - entityY + halfViewHeight			
@@ -252,7 +316,30 @@ func (e *Player) UpdateOwnView(c *serverModel.Client) {
 		}
 	}
 
-	c.In <- network.NewUpdateOwnViewEvent(&fov)			
+	/*
+	This way is better, but debugging below
+	for x :=0; x < viewWidth; x++ {	 
+		// trim the margin off of fov[x]
+		fov[x] = fov[x][(margin):viewHeight-margin]
+	}
+	fov = fov[margin:viewWidth-margin]
+	*/
+
+	fov2 := make([][]int, viewHeight-(margin*2)) // initialize a slice of viewHeight slices											
+	for i:=0; i < viewWidth-(margin*2); i++ {
+		fov2[i] = make([]int, viewWidth-(margin*2)) // initialize a slice of viewWidth in in each of viewHeight slices				
+	}
+
+	for x :=margin; x < viewWidth-(margin); x++ {
+		for y :=margin; y < viewHeight-(margin); y++ {
+			fov2[x-margin][y-margin] = fov[x][y]
+		}
+	}
+
+	if c := p.GetClient(); c != nil {	
+		c.In <- network.NewUpdateOwnViewEvent(&fov2)			
+	}
+	
 }
 
 func (p *Player) SetTile(t int) {
@@ -264,7 +351,7 @@ func (p *Player) UpdateOwnStats() {
 	p.GetClient().In <- network.NewUpdateStatsEvent(p.GetName())
 	p.GetClient().In <- network.NewStatEvent("gems",p.gems)
 	p.GetClient().In <- network.NewStatEvent("food",int(math.Floor(p.food)))
-	p.GetClient().In <- network.NewStatEvent("health",int(math.Floor(p.health)))
+	p.GetClient().In <- network.NewStatEvent("health",int(math.Floor(p.Stats.HP)))
 }	
 
 func (p *Player) UpdateClientStat(name string, value int) {
@@ -300,43 +387,108 @@ func (p *Player) Tick() bool {
 	return p.entityData.Tick()
 }
 
+
 func (p *Player) updateFood() { 
 	oldFood := p.food
 	p.food = p.food - 0.001	
 	if p.food <= 0 {
 		p.food = 0
-		oldHealth := p.health
-		p.health = p.health - 0.001
-		if math.Floor(oldHealth) - math.Floor(p.health) > 0 {	
+		oldHealth := p.Stats.HP
+		p.Stats.HP = p.Stats.HP - 0.001
+		if math.Floor(oldHealth) - math.Floor(p.Stats.HP) > 0 {	
 			p.ReceiveResult("You are starving. You need to get some food" , "status")	
-			p.GetClient().In <- network.NewStatEvent("health",int(math.Floor(p.health)))
+			p.GetClient().In <- network.NewStatEvent("health",int(math.Floor(p.Stats.HP)))
 		}
 	}
 	if math.Floor(oldFood) - math.Floor(p.food) > 0 {	
-		p.updateClientFood()
+		p.updateClientFood(false)
 	}
 }
 
 // update client with current food
-func (p *Player) updateClientFood() { 
+func (p *Player) updateClientFood(silent bool) { 
 	foodInt := int(math.Floor(p.food))
 	foodStr := fmt.Sprintf("%d", foodInt)
-	p.ReceiveResult("You have " + foodStr + " food." , "food")	
+	if (silent == false) {
+		p.ReceiveResult("You have " + foodStr + " food." , "food")	
+	}
 	p.GetClient().In <- network.NewStatEvent("food",foodInt)
 }
 
-func (p *Player) AddFood(food float64) { 
-	p.food += food
-	p.updateClientFood()
-	// p.entityData.AddFood(food)
+
+func (p *Player) getMaxAddable(objType string) int {
+	max := 0
+	switch objType {
+		case "food":
+			max = maxFood - int(math.Floor(p.food))
+		case "gem":
+			max = maxGems - p.gems
+		case "silver":
+			max = maxSilver - p.silver
+	}
+	if max < 0 { 
+		max = 0
+	}
+	return max
 }
 
-func (p *Player) AddGems(gems int) { 
-	p.gems += gems
+func (p *Player) AddFood(food int) int { 
+
+	maxAddable := p.getMaxAddable("food")
+	fmt.Println(maxAddable)
+	if food > maxAddable {
+		p.food += float64(maxAddable)
+	} else {
+		p.food += float64(food)
+	}
+		
+	added := 0
+	if food > maxAddable {
+		added = maxAddable
+	} else {
+		added = food
+	}
+	// message := "You got " + strconv.Itoa(added) + " food."
+	// p.GetClient().In <- network.NewServerMessageEvent(message)	
+	p.updateClientFood(true)
+	return added	
+}
+
+func (p *Player) AddGems(gems int) int{ 
+	maxAddable := p.getMaxAddable("gem")
+	if gems > maxAddable {
+		p.gems += maxAddable
+	} else {
+		p.gems += gems
+	}
 	p.GetClient().In <- network.NewStatEvent("gems",p.gems)
+	if gems > maxAddable {
+		return maxAddable
+	} else {
+		return gems
+	}
 }
 
-func (p *Player) GetGems() int {
+func (p *Player) GetGemCount() int {
 	return p.gems
 }
 
+func (p *Player) AddSilver(silver int) int{ 
+	/*
+	p.silver += silver
+	p.GetClient().In <- network.NewStatEvent("silver",p.silver)
+	*/
+
+	maxAddable := p.getMaxAddable("silver")
+	if silver > maxAddable {
+		p.silver += maxAddable
+	} else {
+		p.silver += silver
+	}
+	p.GetClient().In <- network.NewStatEvent("silver",p.silver)
+	if (silver > maxAddable) {
+		return maxAddable
+	} else {
+		return silver
+	}
+}

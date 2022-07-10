@@ -7,6 +7,8 @@ import (
 	// "time"
 	"app/pkg/game/action"
 	"app/pkg/game/tiles"
+	"github.com/google/uuid"
+	"sort"
 	"fmt"
 )
 
@@ -59,6 +61,7 @@ func NewNPC() *NPC {
 	// initialize
 	n := &NPC{
 		entityData: entityData{					
+			UUID: uuid.New(),
 			EnergyThreshold: playerEnergyThreshold,
 			slowThresh: slowThresh,
 			Type: gameModel.EntityTypeNPC,		
@@ -147,6 +150,91 @@ func (n *NPC) moveAnchoredWander() {
 	*/
 }
 
+func chickenWalkTileWeight(tile *gameModel.Tile) float64 {
+	if tile.ID >= 15 && tile.ID <= 18 { // bush
+		return 2.0
+	}
+	if tile.ID == 9 {// light forest
+		return 1.5
+	}
+	if tile.ID == 10 {// heavy forest
+		return 1.2
+	}
+	if tile.ID ==  5 {// land
+		return 1
+	}
+	if tile.ID ==  6 {// foothills
+		return 0.8
+	}
+	if tile.Solid == false {
+		return tile.Speed
+	}
+	return 0.0
+}
+
+// Wander around preferring bush, light forest, and grass in that order
+func (n *NPC) moveChickenWalker() {	
+	
+	x, y := n.GetPosition()
+	zone := n.GetZone() 
+	lastMove := n.moveMemory.last()	
+	oppositeOfLastMove := getOppositeDirection(lastMove)
+
+	directions := []int{1,2,3,4}
+	// sort the directions using own compare function
+	sort.Slice(directions, func(i, j int) bool {
+		dix, diy := int2XYvec(directions[i])
+		djx, djy := int2XYvec(directions[j])		
+		ix, iy := zone.GetNewLocation(x,y,dix,diy) 	// translate delta into a zone coord
+		jx, jy := zone.GetNewLocation(x,y,djx,djy) 	// translate delta into a zone coord
+
+		iOccupied := false
+		jOccupied := false
+
+		// if one of the directions is occupied and the other is not, always prefer unoccupied space
+		for _, e := range zone.GetEntities() {
+			eX, eY := e.GetPosition()
+			if eX == ix && eY == iy {
+				iOccupied = true
+			}
+			if eX == jx && eY == jy {
+				jOccupied = true
+			}
+		}
+		if iOccupied && !jOccupied {
+			return false
+		}
+		if !iOccupied && jOccupied {
+			return true
+		}
+		// prefer not reversing direction
+		if directions[i] == oppositeOfLastMove {
+			return false
+		}
+		if directions[j] == oppositeOfLastMove {
+			return true
+		}
+		// now give tile a weight based on its type
+		return chickenWalkTileWeight(zone.GetTile(ix, iy)) > chickenWalkTileWeight(zone.GetTile(jx, jy))
+	})
+
+	fmt.Println(directions)
+
+	// now pop the top item off directions and use it
+	for _, d := range directions {
+		x, y := int2XYvec(d)
+		n.QueuedAction = &action.MoveAction{
+			Mover: n,
+			X: x,
+			Y: y, 
+		}
+		n.moveMemory.enqueue(d)
+		return
+	}
+
+}
+
+
 // Generally wander around following the path of least resistance. Some obstactle avoidance
 func (n *NPC) moveEasyWalker() {		
 
@@ -203,7 +291,7 @@ func (n *NPC) moveEasyWalker() {
 	// if blocked on last move, consider the one before that "last" so we can move perpendicular to it
 	if lastMove == -1 {
 		lastMove = n.moveMemory.read(1)
-		fmt.Println(lastMove)
+		// fmt.Println("lastMove: ", lastMove)
 	}
  
 	// Next priority is to pick a dir that is perpendicular to last move
@@ -223,6 +311,9 @@ func (n *NPC) moveEasyWalker() {
 	}
 
 	// otherwise pick at random one of the items from fastestDirs
+	if 	len(fastestDirs) == 0 { // but only if there are fastestDirs
+		return
+	}
 	if dir == 0 {		
 		dir = fastestDirs[rand.Intn(len(fastestDirs))]		
 	}
@@ -265,7 +356,9 @@ func (n *NPC) Move() {
 			case "bumpercar":
 				n.moveBumpercar()	
 			case "easyWalker":
-				n.moveEasyWalker()	
+				n.moveEasyWalker()
+			case "chickenWalker":
+				n.moveChickenWalker()	
 		}
 	}
 }
@@ -284,10 +377,16 @@ func (n *NPC) SetProperties(p gameModel.NPCProperties) {
 	n.SetName(p.Name)
 	n.SetPosition(p.X, p.Y)
 	n.SetTile(tiles.Tiles[p.Tile].ID)
+	if (p.Health != 0) {
+		n.Stats.HP = float64(p.Health)
+	} else {
+		n.Stats.HP = 10.0
+	}	
+	if (p.Type != "") {
+		n.Type = p.Type
+	}
 	n.properties = p
 }
-
-
 
 func (n *NPC) ReceiveResult(msg string, code string) {
 	if code == "blocked" {
@@ -297,4 +396,12 @@ func (n *NPC) ReceiveResult(msg string, code string) {
 				n.moveMemory.enqueue(-1)
 		}
 	}
+}
+
+// TakeDamage returns if they would die so XP can be dished out
+func (n *NPC) TakeDamage(damage float64) bool {	
+	if (n.properties.IsMortal == true) {
+		return n.entityData.TakeDamage(damage)
+	} 
+	return false
 }

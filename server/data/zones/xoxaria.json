@@ -30,31 +30,43 @@
         {          
           "name":"Food",          
           "type":"food",            
-          "tileName":"cookedChicken",         
-          "x":5,
-          "y":5,
-          "width":1,
-          "height":1,
+          "tileName":"cookedChicken",   
+          "ordinality": 2,         
           "visible":true          
+        },   
+        {          
+          "name":"Gem1",          
+          "type":"gem",            
+          "tileName":"gem", 
+          "x":172,
+          "y":147,                             
+          "visible":true,
+          "lightRadius":1
+          
         },
         {          
-          "name":"Food",          
-          "type":"food",            
-          "tileName":"cookedChicken",         
-          "x":7,
-          "y":5,
-          "width":1,
-          "height":1,
-          "visible":true          
+          "name":"Dead body",          
+          "type":"deadBody",            
+          "tileName":"deadBody",   
+          "x":169,
+          "y":169,
+          "visible":true,
+          "lightRadius":1
         },
+        
         {          
           "name":"Gems",          
           "type":"gem",            
-          "tileName":"gem",      
-          "x":6,
-          "y":6,
-          "width":1,
-          "height":1,
+          "tileName":"gem",   
+          "ordinality": 20,                      
+          "visible":true,
+          "lightRadius":1
+        },
+        {          
+          "name":"Silver",          
+          "type":"silver",            
+          "tileName":"moneyBag",   
+          "ordinality": 12,                      
           "visible":true          
         },
         {          
@@ -172,7 +184,8 @@
           "y":358,
           "width":1,
           "height":1,
-          "visible":true         
+          "visible":true, 
+          "lightRadius":3       
         },
         {
           "name":"blocked-cave",
@@ -274,13 +287,28 @@
       "name":"Zardox the wanderer",
       "type":"npc",
       "tileName":"minstrel",
-      "x":7, 
-      "y":6,
+      "x":70, 
+      "y":60,
       "movement" : {
         "algorithm":"easyWalker",
         "speedMod": 10,
         "directionChangeProbability": 10 
       }
+    },
+    {
+      "name":"Wild Chicken",
+      "type":"chicken",
+      "tileName":"chicken",     
+      "health":1,
+      "isMortal":true,
+      "x":73, 
+      "y":272,
+      "movement" : {
+        "algorithm":"chickenWalker",
+        "speedMod": 11,
+        "directionChangeProbability": 60
+      },
+      "ordinality": 1 
     }
-  ]
+  ] 
 }

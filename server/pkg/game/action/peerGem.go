@@ -16,7 +16,7 @@ const peerGemHeight = 160
 
 func (a *PeerGemAction) Execute() bool {
 
-	if a.Peerer.GetGems() < 1 {
+	if a.Peerer.GetGemCount() < 1 {
 		a.Peerer.GetClient().In <- network.NewServerResultEvent("Peer at a Gem. You don't have any!", "fail")
 	}
 

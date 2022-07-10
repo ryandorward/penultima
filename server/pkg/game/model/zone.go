@@ -28,6 +28,7 @@ type Zone interface {
 	// RemoveWorldObjectByKey(string) // world objects indexed by string
 	RemoveWorldObjectByUUID(uuid.UUID)
 	RemoveWorldObject(*WorldObject)
+	AddWorldObject(*WorldObject)
 
 	GetNewLocation(x,y,dx,dy int) (int, int)
 
@@ -43,5 +44,5 @@ type Zone interface {
 	GetParentZone() Zone
 
 	GetTorroidal() bool
-
+	
 }

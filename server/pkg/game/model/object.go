@@ -9,6 +9,7 @@ type WorldObject struct {
 	Tile string       `json:"tile"` // representing tile
 	X    int       `json:"x"`
 	Y    int       `json:"y"`
+	Quantity int `json:"quantity"`
 
 	// special features
 	LightRadius int `json:"lightRadius"`
@@ -35,4 +36,17 @@ type WarpTarget struct {
 
 type HealZone struct {
 	Full bool
+}
+
+func (w *WorldObject) SetPosition(x, y int) {
+	w.X = x
+	w.Y = y
+}
+
+func (w *WorldObject) SetQuantity(q int) {
+	w.Quantity = q
+}
+
+func (w *WorldObject) GetType() string {
+	return string(w.Type)
 }

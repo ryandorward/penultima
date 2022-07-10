@@ -4,6 +4,7 @@ import (
 // 	"app/pkg/game/event"
 	//"app/pkg/game/data"
 	"app/pkg/game/event/network"	
+	"strconv"
 	"fmt"
 //	"app/pkg/game/util"
 //	"strings"
@@ -35,21 +36,35 @@ func (a *SimpleAction) Execute() bool {
 		return true
 	} else if (a.Action == "get") {
 		// check if any world object is food. Eventually we might have some "gettable" flag
-		for key, obj := range zone.GetAllWorldObjects() {
+		for _, obj := range zone.GetAllWorldObjects() {
 			if obj.X == x && obj.Y == y {						
-				if obj.Type == "food" {
-					a.Actor.GetClient().In <- network.NewServerMessageEvent("Get Food!")	
-					a.Actor.AddFood(20.0)			
-					fmt.Println(obj, key)						
-					zone.RemoveWorldObjectByUUID(obj.UUID) 
-					return true
+				added := -1								
+				if obj.Type == "food" {						
+					a.Actor.GetClient().In <- network.NewServerMessageEvent("Get " +  obj.Name + "!")				
+					added = a.Actor.AddFood(obj.Quantity)																									
 				}	
 				if obj.Type == "gem" {
-					a.Actor.GetClient().In <- network.NewServerMessageEvent("Get Gems!")	
-					a.Actor.AddGems(1)										
-					zone.RemoveWorldObjectByUUID(obj.UUID) 
-					return true
+					a.Actor.GetClient().In <- network.NewServerMessageEvent("Get " +  obj.Name + "!")									
+					added = a.Actor.AddGems(obj.Quantity)															
+				}	
+				if obj.Type == "silver" {	
+					a.Actor.GetClient().In <- network.NewServerMessageEvent("Get " +  obj.Name + "!")								
+					added = a.Actor.AddSilver(obj.Quantity)						
 				}					
+				if added == 0 {
+					a.Actor.GetClient().In <- network.NewServerMessageEvent("You can't carry more " + obj.Name + "!")
+					return true
+				} else if added > 0 {
+					fmt.Println("Added ", added, " ", obj.Type)
+					message := "You got " + strconv.Itoa(added) + " " + obj.Name + "."
+					a.Actor.GetClient().In <- network.NewServerMessageEvent(message)				
+					if added == obj.Quantity {
+						zone.RemoveWorldObjectByUUID(obj.UUID) 
+					} else {
+						obj.Quantity = obj.Quantity - added
+					}
+					return true
+				}	
 			}
 		}
 		a.Actor.GetClient().In <- network.NewServerMessageEvent("Get. Nothing to get!")

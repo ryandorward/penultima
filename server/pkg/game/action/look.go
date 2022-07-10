@@ -4,6 +4,7 @@ import (
 	"app/pkg/game/event/network"
 	// "app/pkg/game/data"
 	"app/pkg/game/tiles"
+	"strconv"
 )
 
 type LookAction struct {
@@ -31,14 +32,17 @@ func (a *LookAction) Execute() bool {
 	// now try world objects
 	for _, obj := range zone.GetAllWorldObjects() {
 		if obj.X == lookX && obj.Y == lookY {					
-			var Name string
+			var name, quantity string
 			if (obj.Name != "" ) {
-				Name = obj.Name
+				name = obj.Name
 			} else {
-				Name = tiles.Tiles[obj.Tile].Name					
+				name = tiles.Tiles[obj.Tile].Name					
+			}
+			if (obj.Quantity != 0 ) {
+				quantity = strconv.Itoa(obj.Quantity) + " "
 			}
 
-			a.Looker.GetClient().In <- network.NewServerResultEvent("You see " + Name + ".", "success")		
+			a.Looker.GetClient().In <- network.NewServerResultEvent("You see " + quantity + name + ".", "success")		
 			return true 
 		}
 	}

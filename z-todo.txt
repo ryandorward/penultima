@@ -16,8 +16,6 @@ Towns etc
 
 NPCs + monsters
 
-
-
 Food
   make food units a property of food itself
   when food units = 0 the world object disappears

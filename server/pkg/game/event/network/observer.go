@@ -93,10 +93,12 @@ func (o *networkObserver) Notify(e event.Event) {
 		}
 
 		for _, ent := range inView  {
-			// ent.UpdateOwnView()
+			ent.UpdateOwnView()
+			/*
 			if c := ent.GetClient(); c != nil {	
 				ent.UpdateOwnView(c)
 			}
+			*/
 		}			
 
 	/*

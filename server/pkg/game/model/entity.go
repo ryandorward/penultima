@@ -11,7 +11,7 @@ type Entity interface {
 	GetName() string
 	SetName(string)
 
-	GetType() EntityType
+	GetType() string // EntityType
 
 	GetZone() Zone
 	GetZoneName() string
@@ -19,7 +19,9 @@ type Entity interface {
 	SetZoneWithTarget(Zone, int, int)
 
 	GetPosition() (int, int)
-	SetPosition(int, int)
+	SetPosition(int, int)	
+
+	SetQuantity(int)	
 
 	GetStats() Stats
 
@@ -29,10 +31,10 @@ type Entity interface {
 	RollToHit(int) bool
 	RollDamage() int
 
-	TakeDamage(int) bool
+	TakeDamage(float64) bool
 	Die()
 	GainExp(int)
-	Heal(int)
+	Heal(float64)
 
 	GetClient() *model.Client
 
@@ -47,7 +49,7 @@ type Entity interface {
 	GetLastMoveTry() (int, int)
 	SetLastMoveTry(int, int)
 
-	UpdateOwnView(c *model.Client)
+	UpdateOwnView() 
 	UpdateOwnStats()
 	UpdateClientStat(string, int)
 
@@ -57,10 +59,10 @@ type Entity interface {
 
 	ReceiveResult(string, string)
 
-	AddFood(float64)
-	AddGems(int)
-	GetGems() int
-
+	AddFood(int) int
+	AddGems(int) int
+	AddSilver(int) int
+	GetGemCount() int
 }
 
 type EntityType string
@@ -74,7 +76,7 @@ const (
 type Stats struct {
 	Level         int `json:"level"`
 	MaxHP         int `json:"max_hp"`
-	HP            int `json:"hp"`
+	HP            float64 `json:"hp"`
 	XP            int `json:"xp"`
 	AC            int `json:"ac"`
 	XPToNextLevel int `json:"xp_to_next_level"`
@@ -91,12 +93,15 @@ type NPCProperties struct {
 	Name string `json:"name"`
 	X    int    `json:"x"`
 	Y    int    `json:"y"`
-	Type string `json:"type"`
+	Type EntityType `json:"type"`
 	Tile string `json:"tileName"`	
+	Health int `json:"health"`
+	IsMortal bool `json:"isMortal"`
 	Movement struct {
 		SpeedMod int `json:"speedMod"` // speed = 1/SpeedMod
 		Jitter int `json:"jitter"` // better be less than SpeedMod or weirdness will ensue
 		Algorithm string `json:"algorithm"`
 		DirectionChangeProbability int `json:"directionChangeProbability"` // 0-100	
 	} `json:"movement"`
+	Ordinality int `json:"ordinality"`
 }  

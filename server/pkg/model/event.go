@@ -18,6 +18,7 @@ type ClientEvent struct {
 	Look *ClientLookEvent `json:"look,omitempty"`
 	Talk *ClientTalkEvent `json:"talk,omitempty"`
 	SimpleAction *ClientSimpleActionEvent `json:"simpleAction,omitempty"`
+	DirectionalAction *ClientDirectionalActionEvent `json:"directionalAction,omitempty"`
 	Sender *Client `json:"-"`
 }
 
@@ -99,4 +100,10 @@ type ClientTalkEvent struct {
 
 type ClientSimpleActionEvent struct {
 	Action string `json:"action"`
+}
+
+type ClientDirectionalActionEvent struct {
+	Action string `json:"action"`
+	X int `json:"x"`
+	Y int `json:"y"`
 }
