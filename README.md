@@ -1,5 +1,5 @@
 # penultima
-A multiplayer browser-based open-world game inspired heavily from a classic from the 80s. 
+A multiplayer, browser-based, open-world game inspired heavily by the classic from the 80s. 
 
 React in the front, Go in the back. Postgres for the DB. Dockerized. 
 
