@@ -1,5 +1,5 @@
 # penultima
-A multiplayer, browser-based, open-world game inspired heavily by the classic from the 80s. A game set in yesteryear, at a time when the world was 2-D, 8bit, and torroidal.
+A multiplayer, browser-based, open-world game inspired heavily by the classic from the 80s. A game set in yesteryear, at a time when the world was 2-D, 8bit, and torroidal. But MORPG.
 
 React in the front, Go in the back. Postgres for the DB. Websockets. Docker-ized.
 
